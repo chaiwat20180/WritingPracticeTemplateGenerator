@@ -1,0 +1,872 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Writing Practice Template Generator - Ultimate Pro Object</title>
+    
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600&display=swap" rel="stylesheet">
+
+    <style>
+        :root { --grid-color: #555555; --primary: #4a90e2; --bg-dark: #2c2e33; --donate: #ff4757; }
+        * { box-sizing: border-box; }
+        body { font-family: 'Sarabun', sans-serif; margin: 0; display: flex; flex-direction: row; height: 100vh; background-color: var(--bg-dark); overflow: hidden; }
+
+        .mobile-header, .sidebar-overlay { display: none; }
+
+        .sidebar { width: 380px; background: white; padding: 25px; box-shadow: 4px 0 15px rgba(0,0,0,0.4); overflow-y: auto; z-index: 30; display: flex; flex-direction: column; gap: 12px; transition: transform 0.3s ease; }
+        .header-box { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #f0f0f0; padding-bottom: 10px; margin-bottom: 5px; }
+        .sidebar h2 { margin: 0; color: var(--primary); font-size: 18px; }
+        
+        .header-right { display: flex; align-items: center; gap: 8px; }
+        .lang-switch { display: flex; background: #f0f4f8; border-radius: 20px; overflow: hidden; border: 1px solid #ddd; cursor: pointer; }
+        .lang-option { padding: 6px 10px; font-size: 11px; font-weight: bold; color: #888; transition: 0.3s; text-align: center; }
+        .lang-option.active { background: var(--primary); color: white; }
+        
+        .donate-btn { background: var(--donate); color: white; border: none; padding: 6px 12px; border-radius: 20px; font-size: 12px; font-weight: bold; cursor: pointer; transition: 0.3s; display: flex; align-items: center; gap: 4px; box-shadow: 0 2px 5px rgba(255, 71, 87, 0.4); }
+        .donate-btn:hover { background: #ff6b81; transform: scale(1.05); }
+
+        .close-sidebar-btn { display: none; background: none; border: none; font-size: 20px; cursor: pointer; color: #888; }
+        .group { display: flex; flex-direction: column; gap: 4px; }
+        .group label { font-weight: 600; font-size: 13px; color: #555; }
+        
+        .select2-container--default .select2-selection--single { height: 38px; border-radius: 6px; border: 1px solid #ccc; padding: 4px; font-family: inherit; font-size: 14px; }
+        .select2-container { width: 100% !important; }
+        .control { padding: 8px 10px; border: 1px solid #ccc; border-radius: 6px; font-size: 14px; font-family: inherit; width: 100%; transition: 0.2s; }
+        .control:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 2px rgba(74, 144, 226, 0.2); }
+        .row-flex { display: flex; gap: 10px; }
+        
+        .btn { padding: 12px; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 15px; font-weight: bold; transition: 0.3s; margin-top: 5px; }
+        .btn-primary { background: var(--primary); }
+        .btn-primary:hover { background: #357abd; }
+        .btn-danger { background: #ff4d4d; }
+
+        .preview { flex: 1; padding: 20px; overflow-y: auto; overflow-x: hidden; display: flex; flex-direction: column; align-items: center; position: relative; }
+        
+        .page-a4 { 
+            background: white; width: 210mm; height: 296mm; padding: 15mm; margin-bottom: 20px;
+            box-shadow: 0 0 15px rgba(0,0,0,0.5); display: flex; flex-direction: column;
+            position: relative; flex-shrink: 0; overflow: hidden;
+            transition: transform 0.2s ease-out, margin-bottom 0.2s ease-out;
+        }
+        .page-legend { margin-top: auto; text-align: center; font-size: 12px; color: #777; padding-top: 10px; border-top: 1px dashed #eee; width: 100%; }
+
+        .zoom-controls { position: fixed; bottom: 25px; right: 25px; z-index: 40; display: flex; flex-direction: column; gap: 10px; }
+        .zoom-btn { width: 45px; height: 45px; border-radius: 50%; background: white; color: var(--primary); border: 2px solid var(--primary); box-shadow: 0 4px 10px rgba(0,0,0,0.3); font-size: 20px; cursor: pointer; transition: 0.2s; display: flex; justify-content: center; align-items: center; }
+        .zoom-btn:hover { background: var(--primary); color: white; transform: scale(1.1); }
+
+        .grid-container { display: grid; justify-content: center; align-content: start; width: max-content; margin: 0 auto; }
+        .cell-unit { display: flex; flex-direction: column; align-items: center; width: 100%; box-sizing: border-box; }
+        
+        .layout-spaced .main-box { border: 2px solid var(--grid-color); border-radius: 4px; }
+        .layout-spaced .pinyin-box { border: 1px solid var(--grid-color); margin-bottom: 4px; border-radius: 4px; }
+        .layout-connected { border-top: 2px solid var(--grid-color); border-left: 2px solid var(--grid-color); }
+        .layout-connected .cell-unit { border-right: 2px solid var(--grid-color); border-bottom: 2px solid var(--grid-color); }
+        .layout-connected .main-box { border: none !important; }
+        .layout-connected .pinyin-box { border: none !important; border-bottom: 1px dashed var(--grid-color); margin-bottom: 0 !important; border-radius: 0; }
+        .layout-stripes .cell-unit { border-top: 2px solid var(--grid-color); border-bottom: 2px solid var(--grid-color); border-right: 2px solid var(--grid-color); }
+        .layout-stripes .main-box { border: none !important; }
+        .layout-stripes .pinyin-box { border: none !important; border-bottom: 1px dashed var(--grid-color); margin-bottom: 0 !important; border-radius: 0; }
+        .layout-stripes-vert { border-top: 2px solid var(--grid-color); }
+        .layout-stripes-vert .cell-unit { border-bottom: 2px solid var(--grid-color); border-left: 2px solid var(--grid-color); border-right: 2px solid var(--grid-color); margin-left: -2px; }
+        .layout-stripes-vert .main-box { border: none !important; }
+        .layout-stripes-vert .pinyin-box { border: none !important; border-bottom: 1px dashed var(--grid-color); margin-bottom: 0 !important; border-radius: 0; }
+
+        .pinyin-box { width: 100%; height: 22px; display: none; align-items: center; justify-content: center; font-size: 12px; font-family: 'Arial', sans-serif; color: #555; box-sizing: border-box; }
+        .show-pinyin .pinyin-box { display: flex; }
+        .vowel-highlight { background-color: #e0e0e0; color: #000; font-weight: bold; padding: 0 4px; border-radius: 3px; }
+        .main-box { width: 100%; height: 100%; position: relative; display: flex; justify-content: center; align-items: center; box-sizing: border-box; }
+        .main-box span { color: #d3d3d3; position: relative; z-index: 1; pointer-events: none; line-height: 1; text-align: center; }
+
+        /* --- Modal Donate Styles --- */
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.6); z-index: 100; display: none; justify-content: center; align-items: center; opacity: 0; transition: 0.3s; backdrop-filter: blur(3px); }
+        .modal-overlay.show { display: flex; opacity: 1; }
+        .modal-content { background: white; width: 90%; max-width: 400px; border-radius: 12px; overflow: hidden; box-shadow: 0 15px 40px rgba(0,0,0,0.2); transform: translateY(-20px); transition: 0.3s; }
+        .modal-overlay.show .modal-content { transform: translateY(0); }
+        .modal-header { background: #f8f9fa; padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #eee; }
+        .modal-header h3 { margin: 0; font-size: 18px; color: #333; display: flex; align-items: center; gap: 8px; }
+        .close-modal { background: #eee; border: none; font-size: 16px; cursor: pointer; color: #555; width: 30px; height: 30px; border-radius: 50%; display: flex; justify-content: center; align-items: center; transition: 0.2s; }
+        .close-modal:hover { background: #ff4d4d; color: white; }
+        
+        .modal-tabs { display: flex; border-bottom: 1px solid #eee; background: #fafafa; }
+        .tab-btn { flex: 1; padding: 12px 0; border: none; background: none; cursor: pointer; font-size: 13px; font-weight: bold; color: #777; transition: 0.2s; border-bottom: 2px solid transparent; outline: none; }
+        .tab-btn:hover { color: var(--primary); }
+        .tab-btn.active { color: var(--primary); border-bottom: 2px solid var(--primary); background: white; }
+        .tab-pane { display: none; padding: 25px 20px; text-align: center; }
+        .tab-pane.active { display: block; animation: fadeIn 0.3s; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* Bank Item & Images */
+        .bank-item { display: flex; align-items: center; padding: 12px; border: 1px solid #eee; border-radius: 10px; margin-bottom: 10px; text-align: left; background: white; transition: 0.2s; justify-content: space-between; }
+        .bank-item:hover { border-color: #ddd; box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
+        .bank-logo-wrap { display: flex; align-items: center; gap: 12px; flex: 1; }
+        
+        .bank-img { width: 40px; height: 40px; border-radius: 8px; object-fit: contain; background: #fff; border: 1px solid #eee; box-shadow: 0 2px 5px rgba(0,0,0,0.05); padding: 2px; }
+        
+        .bank-info div { font-size: 14px; font-weight: bold; color: #333; margin-bottom: 2px; }
+        .bank-info .acc-name { font-size: 12px; color: #777; font-weight: normal; margin-bottom: 4px; }
+        .bank-info span { font-size: 14px; color: var(--primary); font-family: monospace; font-weight: bold; background: #f0f4f8; padding: 2px 6px; border-radius: 4px; }
+        
+        .copy-btn { background: #f1f5f9; border: 1px solid #cbd5e1; color: #475569; padding: 6px 12px; border-radius: 6px; font-size: 12px; font-weight: bold; cursor: pointer; transition: 0.2s; display: flex; align-items: center; gap: 4px; }
+        .copy-btn:hover { background: var(--primary); color: white; border-color: var(--primary); }
+
+        .qr-placeholder { width: 220px; height: 220px; background: white; border: 2px solid #eee; margin: 0 auto 10px auto; display: flex; justify-content: center; align-items: center; border-radius: 12px; overflow: hidden; padding: 10px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
+        .qr-placeholder img { width: 100%; height: 100%; object-fit: contain; }
+
+        .toast { position: fixed; top: 20px; left: 50%; transform: translateX(-50%) translateY(-50px); background: #333; color: white; padding: 10px 20px; border-radius: 30px; font-size: 14px; font-weight: bold; opacity: 0; transition: 0.3s; z-index: 1000; pointer-events: none; box-shadow: 0 5px 15px rgba(0,0,0,0.3); }
+        .toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
+
+        @media (max-width: 768px) {
+            body { flex-direction: column; }
+            .mobile-header { display: flex; justify-content: space-between; align-items: center; background: white; padding: 10px 15px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); position: relative; z-index: 20; }
+            .mobile-header h2 { margin: 0; font-size: 18px; color: var(--primary); }
+            .hamburger { background: none; border: none; font-size: 24px; color: #333; cursor: pointer; padding: 0; }
+            .sidebar .header-box { display: none; }
+            .close-sidebar-btn { display: block; position: absolute; right: 15px; top: 15px; }
+            .sidebar { position: fixed; top: 0; left: 0; height: 100vh; width: 320px; max-width: 85vw; transform: translateX(-100%); padding-top: 45px; }
+            .sidebar.open { transform: translateX(0); }
+            .sidebar-overlay { display: block; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.6); z-index: 25; opacity: 0; pointer-events: none; transition: opacity 0.3s ease; }
+            .sidebar-overlay.open { opacity: 1; pointer-events: auto; }
+            .preview { padding: 15px; height: calc(100vh - 55px); align-items: center; }
+            .zoom-controls { bottom: 15px; right: 15px; }
+        }
+
+        .pdf-exporting body { background: white; flex-direction: column; }
+        .pdf-exporting .sidebar, .pdf-exporting .mobile-header, .pdf-exporting .sidebar-overlay, .pdf-exporting .zoom-controls { display: none !important; }
+        .pdf-exporting .preview { padding: 0 !important; margin: 0 auto; width: 210mm; overflow: hidden; align-items: center; height: auto; }
+        .pdf-exporting .page-a4 { margin: 0 !important; box-shadow: none !important; border: none !important; page-break-after: always; transform: none !important; }
+        .credit-box { text-align: center; margin-top: 10px; font-size: 11px; color: #888; border-top: 1px solid #eee; padding-top: 15px; }
+        .credit-box a { color: var(--primary); text-decoration: none; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+<div class="toast" id="copyToast">✅ คัดลอกสำเร็จ!</div>
+
+<div class="mobile-header">
+    <button class="hamburger" onclick="toggleSidebar()">☰</button>
+    <h2>🛠 WPTG</h2>
+    <div class="header-right">
+        <button class="donate-btn" onclick="openDonateModal()">💖</button>
+        <div class="lang-switch">
+            <div class="lang-option active" id="btn-th-mob" onclick="setLanguage('th')">TH</div>
+            <div class="lang-option" id="btn-en-mob" onclick="setLanguage('en')">EN</div>
+        </div>
+    </div>
+</div>
+
+<div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
+
+<div class="zoom-controls">
+    <button class="zoom-btn" onclick="changeZoom(0.1)" title="Zoom In">➕</button>
+    <button class="zoom-btn" onclick="resetZoom()" title="Reset Zoom" style="font-size: 16px;">🔄</button>
+    <button class="zoom-btn" onclick="changeZoom(-0.1)" title="Zoom Out">➖</button>
+</div>
+
+<div class="sidebar" id="sidebar">
+    <button class="close-sidebar-btn" onclick="toggleSidebar()">✖</button>
+    <div class="header-box">
+        <h2>🛠 WPTG</h2>
+        <div class="header-right">
+            <button class="donate-btn" onclick="openDonateModal()">💖 <span data-i18n="btnDonate">Donate</span></button>
+            <div class="lang-switch">
+                <div class="lang-option active" id="btn-th-desk" onclick="setLanguage('th')">TH</div>
+                <div class="lang-option" id="btn-en-desk" onclick="setLanguage('en')">EN</div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="group">
+        <label data-i18n="presetLabel">ชุดตัวอักษร</label>
+        <select id="preset" class="select-ui">
+            <option value="custom" data-search="custom กำหนดเอง" data-i18n-opt="optCustom">-- กำหนดเอง / Custom --</option>
+            <optgroup label="ภาษาไทย (Thai)" data-i18n-grp="grpThai">
+                <option value="thai" data-search="thai th ไทย กขค พยัญชนะ" data-i18n-opt="optThCon">🇹🇭 พยัญชนะ (ก-ฮ)</option>
+                <option value="thai_vowel" data-search="thai th ไทย สระ" data-i18n-opt="optThVow">🇹🇭 สระไทย (32 เสียง)</option>
+            </optgroup>
+            <optgroup label="ภาษาญี่ปุ่น (Japanese)" data-i18n-grp="grpJp">
+                <option value="hira" data-search="japan jp hira ฮิรางานะ ญี่ปุ่น พื้นฐาน" data-i18n-opt="optJpHira">🇯🇵 ฮิรางานะ พื้นฐาน (あ-ん)</option>
+                <option value="hira_daku" data-search="japan jp hira daku ฮิรางานะ ขุ่น เต็นเต็น มารุ" data-i18n-opt="optJpHiraDaku">🇯🇵 ฮิรางานะ เสียงขุ่น (が-ぽ)</option>
+                <option value="hira_yoon" data-search="japan jp hira yoon sokuon ฮิรางานะ ควบกล้ำ" data-i18n-opt="optJpHiraYoon">🇯🇵 ฮิรางานะ ควบกล้ำ/หยุด (きゃ-っ)</option>
+                <option value="kata" data-search="japan jp kata คาตาคานะ ญี่ปุ่น พื้นฐาน" data-i18n-opt="optJpKata">🇯🇵 คาตาคานะ พื้นฐาน (ア-ン)</option>
+                <option value="kata_daku" data-search="japan jp kata daku คาตาคานะ ขุ่น เต็นเต็น มารุ" data-i18n-opt="optJpKataDaku">🇯🇵 คาตาคานะ เสียงขุ่น (ガ-ポ)</option>
+                <option value="kata_yoon" data-search="japan jp kata yoon sokuon คาตาคานะ ควบกล้ำ" data-i18n-opt="optJpKataYoon">🇯🇵 คาตาคานะ ควบกล้ำ/หยุด (キャ-ッ)</option>
+            </optgroup>
+            <optgroup label="สากล (Global)" data-i18n-grp="grpGlobal">
+                <option value="abc" data-search="english eng upper อังกฤษ พิมพ์ใหญ่" data-i18n-opt="optEnUp">🇬🇧 English Upper (A-Z)</option>
+                <option value="abc_low" data-search="english eng lower อังกฤษ พิมพ์เล็ก" data-i18n-opt="optEnLow">🇬🇧 English Lower (a-z)</option>
+                <option value="kor" data-search="korea kr hangul ฮันกึล เกาหลี" data-i18n-opt="optKor">🇰🇷 Korean (Hangul)</option>
+                <option value="rus" data-search="russia cyrillic รัสเซีย" data-i18n-opt="optRus">🇷🇺 Russian (Cyrillic)</option>
+                <option value="gre" data-search="greece greek กรีก" data-i18n-opt="optGre">🇬🇷 Greek (Alpha-Omega)</option>
+                <option value="spa" data-search="spain spanish สเปน" data-i18n-opt="optSpa">🇪🇸 Spanish (Alfabeto)</option>
+                <option value="ger" data-search="german germany เยอรมัน" data-i18n-opt="optGer">🇩🇪 German (Alphabet)</option>
+            </optgroup>
+        </select>
+    </div>
+
+    <div class="group">
+        <label data-i18n="textLabel">ข้อความต้นแบบ (คั่นด้วยลูกน้ำ ,)</label>
+        <input type="text" id="textInput" class="control" placeholder="พิมพ์ข้อความที่ต้องการ..." data-i18n-ph="textPh">
+    </div>
+
+    <div class="group" id="customReadingGroup" style="background: #f0f8ff; padding: 10px; border-radius: 8px; border: 1px solid #b6d4fe;">
+        <label style="color: #4a90e2;" data-i18n="customReadLabel">💡 คำอ่านกำหนดเอง (คั่นด้วยลูกน้ำ ,)</label>
+        <input type="text" id="customReadingInput" class="control" placeholder="เช่น a,b,c..." data-i18n-ph="customReadPh" style="border-color: #cbd5e1;">
+    </div>
+
+    <div class="row-flex">
+        <div class="group" style="flex:1">
+            <label data-i18n="colsLabel">จำนวนคอลัมน์</label>
+            <input type="number" id="cols" class="control" value="10" min="1">
+        </div>
+        <div class="group" style="flex:1">
+            <label data-i18n="rowsLabel">จำนวนแถว (รวม)</label>
+            <input type="number" id="rows" class="control" value="10" min="1">
+        </div>
+    </div>
+
+    <div class="group">
+        <label data-i18n="dirLabel">ทิศทางของข้อมูล</label>
+        <select id="direction" class="select-ui">
+            <option value="horiz" data-i18n="dirHoriz">แนวนอน (ซ้ายไปขวา)</option>
+            <option value="vert" data-i18n="dirVert">แนวตั้ง (บนลงล่าง)</option>
+        </select>
+    </div>
+
+    <div class="group">
+        <label data-i18n="modeLabel">โหมดการแสดงตัวอักษร</label>
+        <select id="fillMode" class="select-ui">
+            <option value="all" data-i18n="modeAll" selected>แสดงเรียงต่อเนื่อง (ครบทุกตัว)</option>
+            <option value="model" data-i18n="modeModel">เฉพาะแถว/คอลัมน์แรก (คัดตาม)</option>
+            <option value="repeat" data-i18n="modeRepeat">วนซ้ำข้อความจนเต็มหน้ากระดาษ</option>
+        </select>
+    </div>
+
+    <div class="group" id="repeatGroup" style="display:none;">
+        <label style="display:flex; align-items:center; gap:8px; cursor:pointer; color: var(--primary);">
+            <input type="checkbox" id="repeatRow"> <b data-i18n="repeatLabel">ทำซ้ำตัวอักษรให้เต็มแถว</b>
+        </label>
+    </div>
+
+    <div class="group">
+        <label data-i18n="layoutLabel">ลักษณะตาราง (Layout)</label>
+        <select id="gridLayout" class="select-ui">
+            <option value="spaced" data-i18n="laySpace">แยกเป็นช่อง (Spaced)</option>
+            <option value="connected" data-i18n="layConn">ตารางติดกัน (Connected)</option>
+            <option value="stripes" data-i18n="layStripe">เชื่อมเฉพาะแนวนอน (Striped Rows)</option>
+            <option value="stripes-vert" data-i18n="layStripeV">เชื่อมเฉพาะแนวตั้ง (Striped Cols)</option>
+        </select>
+    </div>
+
+    <div class="group">
+        <label data-i18n="styleLabel">ลวดลายในช่อง (Inner Grid)</label>
+        <select id="gridStyle" class="select-ui">
+            <option value="square" data-i18n="styleSquare">ช่องว่าง (Blank Square)</option>
+            <option value="tian" data-i18n="styleTian">จีน - กากบาท (Tian Zi Ge)</option>
+            <option value="tianDotted" data-i18n="styleTianDotted">จีน - กากบาทแบบจุด (Dotted Tian Zi Ge)</option>
+            <option value="mi" data-i18n="styleMi">จีน - กากบาท+ทแยง (Mi Zi Ge)</option>
+            <option value="jiu" data-i18n="styleJiu">จีน - 9 ช่อง (Jiu Gong Ge)</option>
+            <option value="hui" data-i18n="styleHui">จีน - สี่เหลี่ยมซ้อน (Hui Zi Ge)</option>
+            <option value="diagonal" data-i18n="styleDiag">ทแยงมุม (Diagonal X)</option>
+            <option value="cross" data-i18n="styleCross">กากบาทตรง (Cross +)</option>
+            <option value="bottom" data-i18n="styleBottom">เส้นใต้ (Bottom Line)</option>
+            <option value="english" data-i18n="styleEng">อังกฤษ (บรรทัด 4 เส้น)</option>
+            <option value="circle" data-i18n="styleCircle">เกาหลี (วงกลมโฟกัส)</option>
+        </select>
+    </div>
+
+    <div class="row-flex" style="align-items: center;">
+        <div class="group" style="flex:1">
+            <label data-i18n="colorLabel">สีเส้นตาราง</label>
+            <input type="color" id="gridColor" value="#888888" class="control" style="height:38px; padding:2px; cursor:pointer;">
+        </div>
+    </div>
+
+    <div class="group" style="background:#f9f9f9; padding: 10px; border-radius: 8px; margin-top: 5px;">
+        <label style="display:flex; align-items:center; gap:8px; cursor:pointer;">
+            <input type="checkbox" id="showRuby" checked> <span data-i18n="pinyinLabel">แสดงช่องคำอ่าน / Pinyin</span>
+        </label>
+        <label style="display:flex; align-items:center; gap:8px; cursor:pointer; margin-top: 8px; font-size: 12px; color: var(--primary);">
+            <input type="checkbox" id="autoRead" checked> <span data-i18n="autoReadLabel">เติมคำอ่านอัตโนมัติ (แถบเทา = สระ)</span>
+        </label>
+    </div>
+
+    <button class="btn btn-primary" onclick="exportPDF()" data-i18n="btnExport">📥 บันทึกเป็น PDF (A4)</button>
+    <button class="btn btn-danger" onclick="resetForm()" data-i18n="btnReset" style="margin-top: 0;">🔄 ล้างค่าทั้งหมด</button>
+
+    <div class="credit-box">
+        <span data-i18n="creditTxt">สร้างสรรค์และพัฒนาโดย</span> <br>
+        <a href="https://github.com/chaiwat20180" target="_blank">github.com/chaiwat20180</a>
+        <br><br>
+        <div id="sfc6jgfrsfjs6rany2sdbkh3f6149cdjbf9"></div>
+        <script type="text/javascript" src="https://counter1.optistats.ovh/private/counter.js?c=6jgfrsfjs6rany2sdbkh3f6149cdjbf9&down=async" async></script>
+        <noscript><a href="https://www.freecounterstat.com" title="web counter"><img src="https://counter1.optistats.ovh/private/freecounterstat.php?c=6jgfrsfjs6rany2sdbkh3f6149cdjbf9" border="0" title="web counter" alt="web counter"></a></noscript>
+    </div>
+</div>
+
+<div class="preview" id="all-pages"></div>
+
+<div class="modal-overlay" id="donateModal" onclick="closeDonateModal(event)">
+    <div class="modal-content" onclick="event.stopPropagation()">
+        <div class="modal-header">
+            <h3 data-i18n="modalTitle">💖 สนับสนุนเครื่องมือนี้</h3>
+            <button class="close-modal" onclick="closeDonateModal()">✖</button>
+        </div>
+        
+        <div class="modal-tabs">
+            <button class="tab-btn active" onclick="switchDonateTab('tab-qr')" data-i18n="tabQR">พร้อมเพย์</button>
+            <button class="tab-btn" onclick="switchDonateTab('tab-tmw')" data-i18n="tabTMW">TrueMoney</button>
+            <button class="tab-btn" onclick="switchDonateTab('tab-bank')" data-i18n="tabBank">ธนาคาร</button>
+        </div>
+
+        <div class="tab-pane active" id="tab-qr">
+            </div>
+
+        <div class="tab-pane" id="tab-tmw">
+            </div>
+
+        <div class="tab-pane" id="tab-bank">
+            </div>
+
+    </div>
+</div>
+<script>
+    const el = id => document.getElementById(id);
+    let manualZoom = 1.0; 
+    let lastCalculatedRpp = 0;
+    
+    // ==========================================
+    // Donate (Object)
+    // ==========================================
+    const DONATE_CONFIG = {
+        promptpay: {
+            phone: "0959394524",
+            formatted: "095-939-4524",
+            accNameTH: "นาย ไชยวัฒน์ ขวัญทา",
+            accNameEN: "Mr. Chaiwat Kwanta"
+        },
+        truemoney: {
+            icon: "https://play-lh.googleusercontent.com/6I2IYbIg4rhGUgs0UxP_5q6wmJmlBjBrlQ9f0_FAN94yOzwmrtEteifCdPPd1-chY_NX", 
+            phone: "0959394524",
+            formatted: "095-939-4524",
+            accNameTH: "นาย ไชยวัฒน์ ขวัญทา",
+            accNameEN: "Mr. Chaiwat Kwanta"
+        },
+        banks: [
+            {
+                id: "kbank",
+                icon: "https://www.kasikornbank.com/SiteCollectionDocuments/about/img/logo/logo.png", 
+                nameTH: "กสิกรไทย (KBank)",
+                nameEN: "Kasikorn Bank (KBank)",
+                accNameTH: "นาย ไชยวัฒน์ ขวัญทา",
+                accNameEN: "Mr. Chaiwat Kwanta",
+                accNum: "022-8-53333-5", 
+                rawNum: "0228533335"
+            },
+            {
+                id: "scb",
+                icon: "https://play-lh.googleusercontent.com/j-9a3HbVZoX337-MLdkmYt75yUfN5ahis8rOnE09972cFLdVn7Z5Dzu3Guo8ldUv2H4x", 
+                nameTH: "ไทยพาณิชย์ (SCB)",
+                nameEN: "Siam Commercial Bank (SCB)",
+                accNameTH: "นาย ไชยวัฒน์ ขวัญทา",
+                accNameEN: "Mr. Chaiwat Kwanta",
+                accNum: "653-422680-7", 
+                rawNum: "6534226807"
+            }
+        ]
+    };
+
+    // --- ฟังก์ชันสร้าง UI Donate อัตโนมัติ ---
+    function renderDonateInfo() {
+        const lang = currentLang;
+        
+        // 1. เรนเดอร์ QR Code พร้อมเพย์
+        el('tab-qr').innerHTML = `
+            <div class="qr-placeholder">
+                <img src="https://promptpay.io/${DONATE_CONFIG.promptpay.phone}.png" alt="PromptPay QR">
+            </div>
+            <div style="color: #666; font-size: 14px; margin-bottom: 5px;" data-i18n="qrDesc">${lang === 'th' ? 'สแกน QR Code ด้วยแอปพลิเคชันธนาคาร' : 'Scan QR Code with any banking app'}</div>
+            <div style="font-size: 16px; font-weight: bold; color: var(--primary); margin-bottom: 12px;">
+                ${lang === 'th' ? DONATE_CONFIG.promptpay.accNameTH : DONATE_CONFIG.promptpay.accNameEN}
+            </div>
+            <div class="bank-item" style="justify-content: center; background: #f8f9fa;">
+                <span style="font-size: 18px; font-weight: bold; letter-spacing: 1px; color: var(--primary); font-family: monospace; margin-right: 10px;">${DONATE_CONFIG.promptpay.formatted}</span>
+                <button class="copy-btn" onclick="copyText('${DONATE_CONFIG.promptpay.phone}')">📋 ${lang === 'th' ? 'คัดลอก' : 'Copy'}</button>
+            </div>
+        `;
+
+        // 2. เรนเดอร์ TrueMoney Wallet
+        el('tab-tmw').innerHTML = `
+            <div class="bank-item">
+                <div class="bank-logo-wrap">
+                    <img src="${DONATE_CONFIG.truemoney.icon}" alt="TrueMoney" class="bank-img" onerror="this.src='https://via.placeholder.com/40?text=TM'">
+                    <div class="bank-info">
+                        <div>${lang === 'th' ? 'ทรูมันนี่ วอเล็ต (TrueMoney)' : 'TrueMoney Wallet'}</div>
+                        <div class="acc-name">${lang === 'th' ? DONATE_CONFIG.truemoney.accNameTH : DONATE_CONFIG.truemoney.accNameEN}</div>
+                        <span>${DONATE_CONFIG.truemoney.formatted}</span>
+                    </div>
+                </div>
+                <button class="copy-btn" onclick="copyText('${DONATE_CONFIG.truemoney.phone}')">📋 ${lang === 'th' ? 'คัดลอก' : 'Copy'}</button>
+            </div>
+        `;
+
+        // 3. เรนเดอร์ Banks
+        el('tab-bank').innerHTML = DONATE_CONFIG.banks.map(bank => `
+            <div class="bank-item">
+                <div class="bank-logo-wrap">
+                    <img src="${bank.icon}" alt="${bank.id}" class="bank-img" onerror="this.src='https://via.placeholder.com/40?text=Bank'">
+                    <div class="bank-info">
+                        <div>${lang === 'th' ? bank.nameTH : bank.nameEN}</div>
+                        <div class="acc-name">${lang === 'th' ? bank.accNameTH : bank.accNameEN}</div>
+                        <span>${bank.accNum}</span>
+                    </div>
+                </div>
+                <button class="copy-btn" onclick="copyText('${bank.rawNum}')">📋 ${lang === 'th' ? 'คัดลอก' : 'Copy'}</button>
+            </div>
+        `).join('');
+    }
+
+    // ---  (Copy to Clipboard) ---
+    function copyText(text) {
+        navigator.clipboard.writeText(text).then(() => {
+            const toast = el('copyToast');
+            toast.innerText = currentLang === 'th' ? `✅ คัดลอกเบอร์ ${text} สำเร็จ!` : `✅ Copied ${text} successfully!`;
+            toast.classList.add('show');
+            setTimeout(() => { toast.classList.remove('show'); }, 2500);
+        }).catch(err => {
+            alert('ไม่สามารถคัดลอกได้ กรุณาทำรายการด้วยตนเอง');
+        });
+    }
+
+    function changeZoom(step) { manualZoom = Math.max(0.3, Math.min(3.0, manualZoom + step)); scalePaper(); }
+    function resetZoom() { manualZoom = 1.0; scalePaper(); }
+    function toggleSidebar() { $('#sidebar').toggleClass('open'); $('#sidebarOverlay').toggleClass('open'); }
+
+    function openDonateModal() { el('donateModal').classList.add('show'); }
+    function closeDonateModal(e) {
+        if(e && e.target !== el('donateModal')) return;
+        el('donateModal').classList.remove('show');
+    }
+    function switchDonateTab(tabId) {
+        $('.tab-btn').removeClass('active'); $('.tab-pane').removeClass('active');
+        $(`.tab-btn[onclick="switchDonateTab('${tabId}')"]`).addClass('active');
+        $(`#${tabId}`).addClass('active');
+    }
+
+    const presets = {
+        thai: "ก,ข,ฃ,ค,ฅ,ฆ,ง,จ,ฉ,ช,ซ,ฌ,ญ,ฎ,ฏ,ฐ,ฑ,ฒ,ณ,ด,ต,ถ,ท,ธ,น,บ,ป,ผ,ฝ,พ,ฟ,ภ,ม,ย,ร,ล,ว,ศ,ษ,ส,ห,ฬ,อ,ฮ",
+        thai_vowel: "อะ,อา,อิ,อี,อึ,อือ,อุ,อู,เอะ,เอ,แอะ,แอ,โอะ,โอ,เอาะ,ออ,เออะ,เออ,เอียะ,เอีย,เอือะ,เอือ,อัวะ,อัว,อำ,ใอ,ไอ,เอา,ฤ,ฤๅ,ฦ,ฦๅ", 
+        hira: "あ,い,う,え,お,か,き,く,け,こ,さ,し,す,せ,そ,た,ち,つ,て,と,な,に,ぬ,ね,の,は,ひ,ふ,へ,ほ,ま,み,む,め,も,や,ゆ,よ,ら,り,る,れ,ろ,わ,を,ん",
+        hira_daku: "が,ぎ,ぐ,げ,ご,ざ,じ,ず,ぜ,ぞ,だ,ぢ,づ,で,ど,ば,び,ぶ,べ,ぼ,ぱ,ぴ,ぷ,ぺ,ぽ",
+        hira_yoon: "きゃ,きゅ,きょ,しゃ,しゅ,しょ,ちゃ,ちゅ,ちょ,にゃ,にゅ,にょ,ひゃ,ヒュ,ひょ,みゃ,みゅ,みょ,りゃ,りゅ,りょ,ぎゃ,ぎゅ,ぎょ,じゃ,じゅ,じょ,びゃ,びゅ,びょ,ぴゃ,ぴゅ,ぴょ,っ",
+        kata: "ア,イ,ウ,エ,オ,カ,キ,ク,ケ,コ,サ,シ,ス,セ,ソ,タ,チ,ツ,テ,ト,ナ,ニ,ヌ,ネ,ノ,ハ,ヒ,フ,ヘ,ホ,マ,ミ,ム,メ,モ,ヤ,ユ,ヨ,ラ,リ,ル,レ,ロ,ワ,ヲ,ン",
+        kata_daku: "ガ,ギ,グ,ゲ,ゴ,ザ,ジ,ズ,ゼ,ゾ,ダ,ヂ,ヅ,デ,ド,バ,ビ,ブ,ベ,ボ,パ,ピ,プ,ペ,ポ",
+        kata_yoon: "キャ,キュ,キョ,シャ,シュ,ショ,チャ,チュ,チョ,ニャ,ニュ,ニョ,ヒャ,ヒュ,ヒョ,ミャ,ミュ,ミョ,リャ,リュ,リョ,ギャ,ギュ,ギョ,ジャ,ジュ,ジョ,ビャ,ビュ,ビョ,ピャ,ピュ,ピョ,ッ",
+        abc: "A,B,C,D,E,F,G,H,I,J,K,L,M,N,O,P,Q,R,S,T,U,V,W,X,Y,Z",
+        abc_low: "a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z",
+        kor: "ㄱ,ㄲ,ㄴ,ㄷ,ㄸ,ㄹ,ㅁ,ㅂ,ㅃ,ㅅ,ㅆ,ㅇ,ㅈ,ㅉ,ㅊ,ㅋ,ㅌ,ㅍ,ㅎ,ㅏ,ㅐ,ㅑ,ㅒ,ㅓ,ㅔ,ㅕ,ㅖ,ㅗ,ㅘ,ㅙ,ㅚ,ㅛ,ㅜ,ㅝ,ㅞ,ㅟ,ㅠ,ㅡ,ㅢ,ㅣ",
+        rus: "А,Б,В,Г,Д,Е,Ё,Ж,З,И,Й,К,Л,М,Н,О,П,Р,С,Т,У,Ф,Х,Ц,Ч,Ш,Щ,Ъ,Ы,Ь,Э,Ю,Я",
+        gre: "Α,Β,Γ,Δ,Ε,Ζ,Η,Θ,Ι,Κ,Λ,Μ,Ν,Ξ,Ο,Π,Ρ,Σ,Τ,Υ,Φ,Χ,Ψ,Ω",
+        spa: "A,B,C,D,E,F,G,H,I,J,K,L,M,N,Ñ,O,P,Q,R,S,T,U,V,W,X,Y,Z",
+        ger: "A,B,C,D,E,F,G,H,I,J,K,L,M,N,O,P,Q,R,S,T,U,V,W,X,Y,Z,Ä,Ö,Ü,ß"
+    };
+
+    const readingMap = {};
+    function buildDictionary(charStr, readingStr) {
+        const cArr = charStr.split(','); const rArr = readingStr.split(',');
+        for(let i=0; i<cArr.length; i++) if(cArr[i] && rArr[i]) readingMap[cArr[i]] = rArr[i];
+    }
+    
+    buildDictionary(presets.thai, "gor,khor,khor,khor,khor,khor,ngor,jor,chor,chor,sor,chor,yor,dor,tor,thor,thor,thor,nor,dor,tor,thor,thor,thor,nor,bor,por,phor,for,phor,for,phor,mor,yor,ror,lor,wor,sor,sor,sor,hor,lor,or,hor");
+    buildDictionary(presets.thai_vowel, "a,aa,i,ii,ue,uee,u,uu,e(s),e,ae(s),ae,o(s),o,or(s),or,oe(s),oe,ia(s),ia,uea(s),uea,ua(s),ua,am,ai,ai,ao,rue,ruee,lue,luee");
+    buildDictionary(presets.hira, "a,i,u,e,o,ka,ki,ku,ke,ko,sa,shi,su,se,so,ta,chi,tsu,te,to,na,ni,nu,ne,no,ha,hi,fu,he,ho,ma,mi,mu,me,mo,ya,yu,yo,ra,ri,ru,re,ro,wa,wo,n");
+    buildDictionary(presets.hira_daku, "ga,gi,gu,ge,go,za,ji,zu,ze,zo,da,ji,zu,de,do,ba,bi,bu,be,bo,pa,pi,pu,pe,po");
+    buildDictionary(presets.hira_yoon, "kya,kyu,kyo,sha,shu,sho,cha,chu,cho,nya,nyu,nyo,hya,ヒュ,ひょ,みゃ,みゅ,みょ,りゃ,りゅ,りょ,ぎゃ,ぎゅ,ぎょ,じゃ,じゅ,じょ,びゃ,びゅ,びょ,ぴゃ,ぴゅ,ぴょ,(tsu)");
+    buildDictionary(presets.kata, "a,i,u,e,o,ka,ki,ku,ke,ko,sa,shi,su,se,so,ta,chi,tsu,te,to,na,ni,nu,ne,no,ha,hi,fu,he,ho,ma,mi,mu,me,mo,ya,yu,yo,ra,ri,ru,re,ro,wa,wo,n");
+    buildDictionary(presets.kata_daku, "ga,gi,gu,ge,go,za,ji,zu,ze,zo,da,ji,zu,de,do,ba,bi,bu,be,bo,pa,pi,pu,pe,po");
+    buildDictionary(presets.kata_yoon, "kya,kyu,kyo,sha,shu,sho,cha,chu,cho,nya,nyu,nyo,hya,hyu,hyo,mya,myu,myo,rya,ryu,ryo,gya,gyu,gyo,ja,ju,jo,bya,byu,byo,pya,pyu,pyo,(tsu)");
+    buildDictionary(presets.abc, "a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z");
+    buildDictionary(presets.abc_low, "a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z");
+    buildDictionary(presets.kor, "g,kk,n,d,tt,r,m,b,pp,s,ss,ng,j,jj,ch,k,t,p,h,a,ae,ya,yae,eo,e,yeo,ye,o,wa,wae,oe,yo,u,wo,we,wi,yu,eu,ui,i");
+    buildDictionary(presets.rus, "a,b,v,g,d,ye,yo,zh,z,i,y,k,l,m,n,o,p,r,s,t,u,f,kh,ts,ch,sh,shch,-,y,-,e,yu,ya");
+    buildDictionary(presets.gre, "alpha,beta,gamma,delta,epsilon,zeta,eta,theta,iota,kappa,lambda,mu,nu,xi,omicron,pi,rho,sigma,tau,upsilon,phi,chi,psi,omega");
+    buildDictionary(presets.spa, "a,be,ce,de,e,efe,ge,hache,i,jota,ka,ele,eme,ene,eñe,o,pe,cu,erre,ese,te,u,uve,doble u,equis,ye,zeta");
+    buildDictionary(presets.ger, "a,be,ce,de,e,ef,ge,ha,i,jot,ka,el,em,en,o,pe,ku,er,es,te,u,fau,ve,iks,ypsilon,zet,ae,oe,ue,eszett");
+
+    const vowelArray = "あいうえおアイウエオAEIOUaeiouАЕЁИОУЫЭЮЯㅏㅐㅑㅒㅓㅔㅕㅖㅗㅘㅙㅚㅛㅜㅝㅞㅟㅠㅡㅢㅣΑΕΗΙΟΥΩÄÖÜäöü".split('');
+    presets.thai_vowel.split(',').forEach(v => vowelArray.push(v));
+    const vowels = new Set(vowelArray);
+
+    const translations = {
+        th: {
+            btnDonate: "Donate", modalTitle: "💖 สนับสนุนนักพัฒนา", tabQR: "พร้อมเพย์", tabTMW: "TrueMoney", tabBank: "ธนาคาร", qrDesc: "สแกน QR Code ด้วยแอปพลิเคชันธนาคาร", tmwDesc: "ทรูมันนี่ วอเล็ต (TrueMoney)", bankKbank: "กสิกรไทย (KBank)", bankScb: "ไทยพาณิชย์ (SCB)", btnCopy: "📋 คัดลอก",
+            presetLabel: "ชุดตัวอักษร", textLabel: "ข้อความต้นแบบ (คั่นด้วยลูกน้ำ ,)", textPh: "พิมพ์ข้อความที่ต้องการ...", 
+            customReadLabel: "💡 คำอ่านกำหนดเอง (คั่นด้วยลูกน้ำ ,)", customReadPh: "เช่น a,b,c...",
+            colsLabel: "จำนวนคอลัมน์", rowsLabel: "จำนวนแถว (รวม)", dirLabel: "ทิศทางของข้อมูล", dirHoriz: "แนวนอน (ซ้ายไปขวา)", dirVert: "แนวตั้ง (บนลงล่าง)", modeLabel: "โหมดการแสดงตัวอักษร", modeModel: "เฉพาะแถว/คอลัมน์แรก (คัดตาม)", modeAll: "แสดงเรียงต่อเนื่อง (ครบทุกตัว)", modeRepeat: "วนซ้ำข้อความจนเต็มหน้ากระดาษ", repeatLabel: "ทำซ้ำตัวอักษรให้เต็มแถว", 
+            layoutLabel: "ลักษณะตาราง (Layout)", laySpace: "แยกเป็นช่อง (Spaced)", layConn: "ตารางติดกัน (Connected)", layStripe: "เชื่อมเฉพาะแนวนอน (Striped Rows)", layStripeV: "เชื่อมเฉพาะแนวตั้ง (Striped Cols)",
+            styleLabel: "ลวดลายในช่อง (Inner Grid)", styleSquare: "ช่องว่าง (Blank Square)", styleTian: "จีน - กากบาท (Tian Zi Ge)", styleTianDotted: "จีน - กากบาทแบบจุด (Dotted Tian Zi Ge)", styleMi: "จีน - กากบาท+ทแยง (Mi Zi Ge)", styleJiu: "จีน - 9 ช่อง (Jiu Gong Ge)", styleHui: "จีน - สี่เหลี่ยมซ้อน (Hui Zi Ge)", styleDiag: "ทแยงมุม (Diagonal X)", styleCross: "กากบาทตรง (Cross +)", styleBottom: "เส้นใต้ (Bottom Line)", styleEng: "อังกฤษ (บรรทัด 4 เส้น)", styleCircle: "เกาหลี (วงกลมโฟกัส)",
+            colorLabel: "สีเส้นตาราง", pinyinLabel: "แสดงช่องคำอ่าน / Pinyin", autoReadLabel: "เติมคำอ่านอัตโนมัติ (แถบเทา = สระ)", btnExport: "📥 บันทึกเป็น PDF (A4)", btnReset: "🔄 ล้างค่าทั้งหมด", optCustom: "กำหนดเอง / Custom",
+            legendTxt: "* หมายเหตุ: แถบสีเทา (<span class='vowel-highlight'>a</span>) คือ สระ (Vowels)", creditTxt: "สร้างสรรค์และพัฒนาโดย",
+            grpThai: "ภาษาไทย (Thai)", optThCon: "🇹🇭 พยัญชนะ (ก-ฮ)", optThVow: "🇹🇭 สระไทย (32 เสียง)",
+            grpJp: "ภาษาญี่ปุ่น (Japanese)", optJpHira: "🇯🇵 ฮิรางานะ พื้นฐาน (あ-ん)", optJpHiraDaku: "🇯🇵 ฮิรางานะ เสียงขุ่น (が-ぽ)", optJpHiraYoon: "🇯🇵 ฮิรางานะ ควบกล้ำ/หยุด (きゃ-っ)",
+            optJpKata: "🇯🇵 คาตาคานะ พื้นฐาน (ア-ン)", optJpKataDaku: "🇯🇵 คาตาคานะ เสียงขุ่น (ガ-ポ)", optJpKataYoon: "🇯🇵 คาตาคานะ ควบกล้ำ/หยุด (キャ-ッ)",
+            grpGlobal: "สากล (Global)", optEnUp: "🇬🇧 English Upper (A-Z)", optEnLow: "🇬🇧 English Lower (a-z)", optKor: "🇰🇷 Korean Hangul", optRus: "🇷🇺 Russian Cyrillic", optGre: "🇬🇷 Greek (Alpha-Omega)", optSpa: "🇪🇸 Spanish (Alfabeto)", optGer: "🇩🇪 German (Alphabet)"
+        },
+        en: {
+            btnDonate: "Donate", modalTitle: "💖 Support Developer", tabQR: "PromptPay", tabTMW: "TrueMoney", tabBank: "Banks", qrDesc: "Scan QR Code with any banking app", tmwDesc: "TrueMoney Wallet", bankKbank: "Kasikorn Bank (KBank)", bankScb: "Siam Commercial Bank (SCB)", btnCopy: "📋 Copy",
+            presetLabel: "Character Set", textLabel: "Practice Text (Comma separated)", textPh: "Type your text here...", 
+            customReadLabel: "💡 Custom Readings (Comma separated)", customReadPh: "e.g., a,b,c...",
+            colsLabel: "Columns", rowsLabel: "Rows (Total)", dirLabel: "Direction", dirHoriz: "Horizontal (L to R)", dirVert: "Vertical (Top to Bottom)", modeLabel: "Display Mode", modeModel: "First Row/Col Only (Trace)", modeAll: "Continuous (Show all)", modeRepeat: "Repeat to fill page", repeatLabel: "Repeat char in row", 
+            layoutLabel: "Grid Layout", laySpace: "Spaced Grid", layConn: "Connected Table", layStripe: "Striped Rows", layStripeV: "Striped Cols",
+            styleLabel: "Inner Grid Style", styleSquare: "Blank Square", styleTian: "Chinese (Tian Zi Ge)", styleTianDotted: "Chinese (Dotted Tian Zi Ge)", styleMi: "Chinese (Mi Zi Ge)", styleJiu: "Chinese (Jiu Gong Ge)", styleHui: "Chinese (Hui Zi Ge)", styleDiag: "Diagonal (X)", styleCross: "Cross (+)", styleBottom: "Bottom Line", styleEng: "English (4 Lines)", styleCircle: "Korean (Focus Circle)",
+            colorLabel: "Grid Color", pinyinLabel: "Show Pronunciation Box", autoReadLabel: "Auto-fill Pronunciation (Gray = Vowels)", btnExport: "📥 Export PDF (A4)", btnReset: "🔄 Reset All", optCustom: "Custom Text",
+            legendTxt: "* Note: Gray highlight (<span class='vowel-highlight'>a</span>) indicates Vowels.", creditTxt: "Created and Developed by",
+            grpThai: "Thai Language", optThCon: "🇹🇭 Thai Consonants (ก-ฮ)", optThVow: "🇹🇭 Thai Vowels (32 Sounds)",
+            grpJp: "Japanese Language", optJpHira: "🇯🇵 Hiragana Base (あ-ん)", optJpHiraDaku: "🇯🇵 Hiragana Dakuten (が-ぽ)", optJpHiraYoon: "🇯🇵 Hiragana Yōon (きゃ-っ)",
+            optJpKata: "🇯🇵 Katakana Base (ア-ン)", optJpKataDaku: "🇯🇵 Katakana Dakuten (ガ-ポ)", optJpKataYoon: "🇯🇵 Katakana Yōon (キャ-ッ)",
+            grpGlobal: "Global Languages", optEnUp: "🇬🇧 English Upper (A-Z)", optEnLow: "🇬🇧 English Lower (a-z)", optKor: "🇰🇷 Korean Hangul", optRus: "🇷🇺 Russian Cyrillic", optGre: "🇬🇷 Greek (Alpha-Omega)", optSpa: "🇪🇸 Spanish (Alfabeto)", optGer: "🇩🇪 German (Alphabet)"
+        }
+    };
+
+    let currentLang = 'th';
+    function setLanguage(lang) {
+        currentLang = lang;
+        $('.lang-option').removeClass('active');
+        $(`#btn-${lang}-desk, #btn-${lang}-mob`).addClass('active');
+
+        const t = translations[currentLang];
+        $('[data-i18n]').each(function() { $(this).html(t[$(this).attr('data-i18n')]); });
+        $('[data-i18n-ph]').each(function() { $(this).attr('placeholder', t[$(this).attr('data-i18n-ph')]); });
+        $('[data-i18n-opt]').each(function() { $(this).text(t[$(this).attr('data-i18n-opt')]); });
+        $('[data-i18n-grp]').each(function() { $(this).attr('label', t[$(this).attr('data-i18n-grp')]); });
+        
+        $('#preset, #direction, #fillMode, #gridStyle, #gridLayout').select2('destroy');
+        initSelect2(); update(); renderDonateInfo(); 
+    }
+
+    function toggleLanguage() { setLanguage(currentLang === 'th' ? 'en' : 'th'); }
+
+    function customSearchMatcher(params, data) {
+        if ($.trim(params.term) === '') return data;
+        if (typeof data.text === 'undefined') return null;
+        let term = params.term.toLowerCase(), text = data.text.toLowerCase();
+        let aliases = $(data.element).data('search') ? $(data.element).data('search').toLowerCase() : "";
+        if (text.indexOf(term) > -1 || aliases.indexOf(term) > -1) return data;
+        return null;
+    }
+
+    function initSelect2() {
+        $('#preset').select2({ matcher: customSearchMatcher });
+        $('#direction, #fillMode, #gridStyle, #gridLayout').select2({ minimumResultsForSearch: -1 });
+    }
+
+    function getDynamicRowsPerPage(cols) {
+        const layout = el('gridLayout').value;
+        const showRuby = el('showRuby').checked;
+        let gapX = 8, gapY = 8;
+        if (layout === 'connected') { gapX = 0; gapY = 0; }
+        else if (layout === 'stripes') { gapX = 0; gapY = 8; }
+        else if (layout === 'stripes-vert') { gapX = 8; gapY = 0; }
+
+        const rubyHeight = showRuby ? 26 : 0;
+        const legendHeight = (showRuby && el('autoRead').checked) ? 35 : 0; 
+        const pageContentHeightPx = (258 * 3.7795) - legendHeight; 
+        const maxWidthPx = 180 * 3.7795;
+        
+        let boxSize = Math.floor((maxWidthPx - (cols - 1) * gapX) / cols);
+        let rpp = Math.floor((pageContentHeightPx + gapY) / (boxSize + rubyHeight + gapY));
+        return Math.max(1, rpp);
+    }
+
+    $(document).ready(function() {
+        initSelect2();
+        renderDonateInfo(); 
+        
+        $('#preset').on('select2:select', function (e) {
+            const val = e.params.data.id;
+            if (val !== 'custom') { 
+                el('textInput').value = presets[val]; 
+                el('customReadingGroup').style.display = 'none'; 
+                autoAdjustRows(true); 
+            } else { 
+                el('textInput').value = ''; 
+                el('customReadingGroup').style.display = 'flex'; 
+            }
+            update();
+        });
+        
+        $('#direction, #fillMode').on('select2:select', function () {
+            autoAdjustRows(true);
+            toggleRepeatRow(); update();
+        });
+        
+        $('#gridStyle, #gridLayout').on('select2:select', update);
+        
+        ['textInput', 'customReadingInput', 'cols', 'rows', 'gridColor'].forEach(id => {
+            el(id).addEventListener('input', update);
+        });
+        
+        ['showRuby', 'autoRead', 'repeatRow'].forEach(id => {
+            el(id).addEventListener('change', update);
+        });
+
+        $(window).on('resize', scalePaper);
+        if (el('preset').value === 'custom') el('customReadingGroup').style.display = 'flex';
+    });
+
+    function autoAdjustRows(force) {
+        if (!force) return;
+        const textStr = el('textInput').value;
+        if (!textStr) return;
+        const charArray = textStr.includes(',') ? textStr.split(',').map(s=>s.trim()) : Array.from(textStr);
+        const cols = parseInt(el('cols').value) || 10;
+        const dir = el('direction').value;
+        const fill = el('fillMode').value;
+        
+        let rpp = getDynamicRowsPerPage(cols);
+        let targetRows = rpp;
+
+        if (fill === 'model') targetRows = (dir === 'horiz') ? 1 : charArray.length;
+        else if (fill === 'all') targetRows = Math.ceil(charArray.length / cols);
+        else if (fill === 'repeat') targetRows = rpp; 
+        
+        el('rows').value = targetRows;
+    }
+
+    function toggleRepeatRow() {
+        const dir = el('direction').value, fill = el('fillMode').value;
+        el('repeatGroup').style.display = (dir === 'vert' && fill === 'model') ? 'block' : 'none';
+    }
+
+    function resetForm() {
+        el('preset').value = 'custom'; el('textInput').value = ''; el('customReadingInput').value = '';
+        el('customReadingGroup').style.display = 'flex';
+        el('cols').value = 10; el('rows').value = 10; 
+        el('direction').value = 'horiz'; el('fillMode').value = 'all'; 
+        el('gridLayout').value = 'spaced'; el('gridStyle').value = 'square'; 
+        el('gridColor').value = '#888888'; 
+        el('showRuby').checked = true; el('autoRead').checked = true; el('repeatRow').checked = false;
+        
+        manualZoom = 1.0; lastCalculatedRpp = 0;
+        $('.select-ui').trigger('change'); toggleRepeatRow(); update();
+    }
+
+    function getGridSVG(style, color) {
+        const hex = encodeURIComponent(color);
+        if (style === 'tian') return `url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='100' height='100' viewBox='0 0 100 100' preserveAspectRatio='none'><line x1='50' y1='0' x2='50' y2='100' stroke='${hex}' stroke-dasharray='4' stroke-width='1'/><line x1='0' y1='50' x2='100' y2='50' stroke='${hex}' stroke-dasharray='4' stroke-width='1'/></svg>")`;
+        if (style === 'tianDotted') return `url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='100' height='100' viewBox='0 0 100 100' preserveAspectRatio='none'><line x1='50' y1='0' x2='50' y2='100' stroke='${hex}' stroke-dasharray='1 4' stroke-width='1'/><line x1='0' y1='50' x2='100' y2='50' stroke='${hex}' stroke-dasharray='1 4' stroke-width='1'/></svg>")`;
+        if (style === 'mi') return `url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='100' height='100' viewBox='0 0 100 100' preserveAspectRatio='none'><line x1='50' y1='0' x2='50' y2='100' stroke='${hex}' stroke-dasharray='4' stroke-width='1'/><line x1='0' y1='50' x2='100' y2='50' stroke='${hex}' stroke-dasharray='4' stroke-width='1'/><line x1='0' y1='0' x2='100' y2='100' stroke='${hex}' stroke-dasharray='4' stroke-width='1'/><line x1='100' y1='0' x2='0' y2='100' stroke='${hex}' stroke-dasharray='4' stroke-width='1'/></svg>")`;
+        if (style === 'jiu') return `url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='100' height='100' viewBox='0 0 100 100' preserveAspectRatio='none'><line x1='33.3' y1='0' x2='33.3' y2='100' stroke='${hex}' stroke-dasharray='4' stroke-width='1'/><line x1='66.6' y1='0' x2='66.6' y2='100' stroke='${hex}' stroke-dasharray='4' stroke-width='1'/><line x1='0' y1='33.3' x2='100' y2='33.3' stroke='${hex}' stroke-dasharray='4' stroke-width='1'/><line x1='0' y1='66.6' x2='100' y2='66.6' stroke='${hex}' stroke-dasharray='4' stroke-width='1'/></svg>")`;
+        if (style === 'hui') return `url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='100' height='100' viewBox='0 0 100 100' preserveAspectRatio='none'><rect x='25' y='25' width='50' height='50' fill='none' stroke='${hex}' stroke-dasharray='4' stroke-width='1'/><rect x='0' y='0' width='100' height='100' fill='none' stroke='${hex}' stroke-width='1'/><line x1='0' y1='0' x2='25' y2='25' stroke='${hex}' stroke-dasharray='4' stroke-width='1'/><line x1='100' y1='0' x2='75' y2='25' stroke='${hex}' stroke-dasharray='4' stroke-width='1'/><line x1='0' y1='100' x2='25' y2='75' stroke='${hex}' stroke-dasharray='4' stroke-width='1'/><line x1='100' y1='100' x2='75' y2='75' stroke='${hex}' stroke-dasharray='4' stroke-width='1'/></svg>")`;
+        if (style === 'diagonal') return `url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='100' height='100' viewBox='0 0 100 100' preserveAspectRatio='none'><line x1='0' y1='0' x2='100' y2='100' stroke='${hex}' stroke-dasharray='4' stroke-width='1'/><line x1='100' y1='0' x2='0' y2='100' stroke='${hex}' stroke-dasharray='4' stroke-width='1'/></svg>")`;
+        if (style === 'cross') return `url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='100' height='100' viewBox='0 0 100 100' preserveAspectRatio='none'><line x1='50' y1='0' x2='50' y2='100' stroke='${hex}' stroke-dasharray='4' stroke-width='1'/><line x1='0' y1='50' x2='100' y2='50' stroke='${hex}' stroke-dasharray='4' stroke-width='1'/></svg>")`;
+        if (style === 'bottom') return `url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='100' height='100' viewBox='0 0 100 100' preserveAspectRatio='none'><line x1='0' y1='100' x2='100' y2='100' stroke='${hex}' stroke-dasharray='4' stroke-width='1'/></svg>")`;
+        if (style === 'english') return `url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='100' height='100' viewBox='0 0 100 100' preserveAspectRatio='none'><line x1='0' y1='33.3' x2='100' y2='33.3' stroke='${hex}' stroke-dasharray='4' stroke-width='1' opacity='0.6'/><line x1='0' y1='66.6' x2='100' y2='66.6' stroke='${hex}' stroke-dasharray='4' stroke-width='1' opacity='0.6'/></svg>")`;
+        if (style === 'circle') return `url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='100' height='100' viewBox='0 0 100 100' preserveAspectRatio='none'><circle cx='50' cy='50' r='40' fill='none' stroke='${hex}' stroke-dasharray='4' stroke-width='1'/></svg>")`;
+        return '';
+    }
+
+    function update() {
+        const textStr = el('textInput').value || "";
+        const charArray = textStr.includes(',') ? textStr.split(',').map(s=>s.trim()) : Array.from(textStr);
+        const cols = parseInt(el('cols').value) || 1;
+        let rowsRequested = parseInt(el('rows').value) || 1; 
+        
+        const dir = el('direction').value, fill = el('fillMode').value, style = el('gridStyle').value;
+        const layout = el('gridLayout').value;
+        const color = el('gridColor').value, showRuby = el('showRuby').checked;
+        const autoRead = el('autoRead').checked, repeatRow = el('repeatRow').checked;
+
+        let tempReadingMap = { ...readingMap };
+        if (el('preset').value === 'custom' && el('customReadingInput').value) {
+            const customRArr = el('customReadingInput').value.split(',').map(s=>s.trim());
+            for(let i=0; i<charArray.length; i++) {
+                if (charArray[i] && customRArr[i]) tempReadingMap[charArray[i]] = customRArr[i];
+            }
+        }
+
+        document.documentElement.style.setProperty('--grid-color', color);
+        const previewArea = el('all-pages'); previewArea.innerHTML = ""; 
+
+        let gapX = 8, gapY = 8;
+        if (layout === 'connected') { gapX = 0; gapY = 0; }
+        else if (layout === 'stripes') { gapX = 0; gapY = 8; }
+        else if (layout === 'stripes-vert') { gapX = 8; gapY = 0; }
+
+        const rubyHeight = showRuby ? 26 : 0;
+        const legendHeight = (showRuby && autoRead) ? 35 : 0; 
+        const pageContentHeightPx = (258 * 3.7795) - legendHeight; 
+        const maxWidthPx = 180 * 3.7795;
+        
+        let boxSize = Math.floor((maxWidthPx - (cols - 1) * gapX) / cols);
+        let rowsPerPage = Math.floor((pageContentHeightPx + gapY) / (boxSize + rubyHeight + gapY));
+        if (rowsPerPage < 1) { rowsPerPage = 1; boxSize = pageContentHeightPx - rubyHeight; }
+
+        if (fill !== 'model') {
+            if (lastCalculatedRpp > 0 && rowsRequested === lastCalculatedRpp) {
+                rowsRequested = rowsPerPage;
+                el('rows').value = rowsPerPage;
+            } else if (lastCalculatedRpp === 0 && (rowsRequested === 10 || rowsRequested === 12)) {
+                rowsRequested = rowsPerPage;
+                el('rows').value = rowsPerPage;
+            }
+        }
+        lastCalculatedRpp = rowsPerPage;
+
+        const actualTotalRows = rowsRequested; 
+        const totalPages = Math.ceil(actualTotalRows / rowsPerPage) || 1;
+        let charMap = new Array(actualTotalRows * cols).fill("");
+
+        if (charArray.length > 0) {
+            if (fill === 'all') {
+                for (let i = 0; i < charArray.length && i < charMap.length; i++) {
+                    if (dir === 'horiz') charMap[i] = charArray[i];
+                    else charMap[(i % actualTotalRows) * cols + Math.floor(i / actualTotalRows)] = charArray[i];
+                }
+            } else if (fill === 'repeat') {
+                for (let i = 0; i < charMap.length; i++) {
+                    if (dir === 'horiz') charMap[i] = charArray[i % charArray.length];
+                    else charMap[(i % actualTotalRows) * cols + Math.floor(i / actualTotalRows)] = charArray[i % charArray.length];
+                }
+            } else if (fill === 'model') {
+                if (dir === 'horiz') {
+                    for (let c = 0; c < cols && c < charArray.length; c++) charMap[c] = charArray[c];
+                } else {
+                    for (let r = 0; r < actualTotalRows && r < charArray.length; r++) {
+                        charMap[r * cols] = charArray[r];
+                        if (repeatRow) for (let c = 1; c < cols; c++) charMap[r * cols + c] = charArray[r];
+                    }
+                }
+            }
+        }
+
+        let cellIdx = 0;
+        for (let p = 0; p < totalPages; p++) {
+            const page = document.createElement('div');
+            page.className = `page-a4 ${showRuby ? 'show-pinyin' : ''}`;
+            if (p < totalPages - 1) page.classList.add('page-break-target');
+
+            const grid = document.createElement('div');
+            grid.className = `grid-container layout-${layout}`;
+            grid.style.gridTemplateColumns = `repeat(${cols}, ${boxSize}px)`;
+            grid.style.gap = `${gapY}px ${gapX}px`;
+
+            for (let r = 0; r < rowsPerPage; r++) {
+                if (p * rowsPerPage + r >= actualTotalRows) break;
+                for (let c = 0; c < cols; c++) {
+                    const char = charMap[cellIdx++] || "";
+                    grid.appendChild(createCell(char, boxSize, style, layout, showRuby, autoRead, fill, dir, repeatRow, c, color, tempReadingMap));
+                }
+            }
+            page.appendChild(grid);
+
+            if (showRuby && autoRead) {
+                const legend = document.createElement('div');
+                legend.className = 'page-legend';
+                legend.innerHTML = translations[currentLang].legendTxt;
+                page.appendChild(legend);
+            }
+            previewArea.appendChild(page);
+        }
+        scalePaper();
+    }
+
+    function createCell(char, size, style, layout, showRuby, autoRead, fill, dir, repeatRow, colIndex, color, mapDict) {
+        const unit = document.createElement('div');
+        unit.className = 'cell-unit'; unit.style.width = `${size}px`;
+
+        if (layout === 'stripes' && colIndex === 0) unit.style.borderLeft = `2px solid ${color}`;
+        if (layout === 'stripes-vert') {
+            unit.style.borderLeft = `2px solid ${color}`;
+            unit.style.borderRight = `2px solid ${color}`;
+            unit.style.borderBottom = `2px solid ${color}`;
+            unit.style.marginLeft = (colIndex > 0) ? '-2px' : '0';
+        }
+
+        const ruby = document.createElement('div');
+        ruby.className = 'pinyin-box';
+        
+        if (showRuby && autoRead && char) {
+            let showReadingHere = true;
+            if (fill === 'model' && dir === 'vert' && repeatRow && colIndex > 0) showReadingHere = false;
+
+            if (showReadingHere) {
+                const reading = mapDict[char] || "";
+                if (reading) {
+                    const rSpan = document.createElement('span'); rSpan.innerText = reading;
+                    if (vowels.has(char)) rSpan.className = 'vowel-highlight';
+                    ruby.appendChild(rSpan);
+                }
+            }
+        }
+        
+        const main = document.createElement('div');
+        main.className = 'main-box';
+        main.style.width = `100%`; main.style.height = `${size}px`;
+        
+        const bgSvg = getGridSVG(style, color);
+        if (bgSvg) {
+            main.style.backgroundImage = bgSvg;
+            main.style.backgroundSize = '100% 100%';
+        }
+        
+        if (char) {
+            const s = document.createElement('span'); s.innerText = char;
+            let fSize = size * 0.60; 
+            if (/[ゃゅょっャュョッ]/.test(char)) fSize = size * 0.45; 
+            else if (char.length > 1) {
+                if (/[\u0E00-\u0E7F]/.test(char)) fSize = size * (char.length >= 3 ? 0.40 : 0.55);
+                else fSize = size * Math.min(0.55, 1.0 / char.length);
+            }
+            s.style.fontSize = `${fSize}px`; s.style.whiteSpace = "nowrap"; main.appendChild(s);
+        }
+        
+        unit.appendChild(ruby); unit.appendChild(main); return unit;
+    }
+
+    function scalePaper() {
+        if (window.innerWidth <= 768) {
+            const previewWidth = $('.preview').width();
+            const paperWidth = 210 * 3.7795; 
+            const autoScale = Math.min(1, (previewWidth - 20) / paperWidth);
+            const finalScale = autoScale * manualZoom;
+            $('.page-a4').css({
+                'transform': `scale(${finalScale})`,
+                'transform-origin': 'top center',
+                'margin-bottom': `calc(-296mm * ${1 - finalScale} + 20px)`
+            });
+        } else {
+            $('.page-a4').css({ 
+                'transform': `scale(${manualZoom})`, 
+                'transform-origin': 'top center',
+                'margin-bottom': `calc(-296mm * ${1 - manualZoom} + 20px)`
+            });
+        }
+    }
+
+    function exportPDF() {
+        document.body.classList.add('pdf-exporting');
+        $('.page-a4').css({ 'transform': 'none', 'margin-bottom': '0' });
+        
+        const element = el('all-pages');
+        const opt = {
+            margin: 0, filename: 'handwriting_practice.pdf', image: { type: 'jpeg', quality: 1 },
+            html2canvas: { scale: 3, useCORS: true, scrollY: 0 },
+            jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+            pagebreak: { mode: 'css', after: '.page-break-target' } 
+        };
+        html2pdf().set(opt).from(element).save().then(() => { 
+            document.body.classList.remove('pdf-exporting');
+            scalePaper(); 
+        });
+    }
+
+    update();
+</script>
+
+</body>
+</html>
