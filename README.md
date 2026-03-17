@@ -1,0 +1,2 @@
+# WritingPracticeTemplateGenerator
+Template Generator
