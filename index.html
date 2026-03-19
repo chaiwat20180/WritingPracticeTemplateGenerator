@@ -9,7 +9,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
     <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;600&family=Noto+Sans+KR:wght@400;600&family=Noto+Sans+SC:wght@400;600&family=Sarabun:wght@400;600&display=swap" rel="stylesheet">
 
     <style>
         :root { --grid-color: #555555; --primary: #4a90e2; --bg-dark: #2c2e33; --donate: #ff4757; }
@@ -40,18 +40,29 @@
         .control:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 2px rgba(74, 144, 226, 0.2); }
         .row-flex { display: flex; gap: 10px; }
         
-        .btn { padding: 12px; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 15px; font-weight: bold; transition: 0.3s; margin-top: 5px; }
+        .btn { padding: 12px; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 15px; font-weight: bold; transition: 0.3s; margin-top: 5px; flex: 1; text-align: center; display: flex; justify-content: center; align-items: center; }
         .btn-primary { background: var(--primary); }
         .btn-primary:hover { background: #357abd; }
+        .btn-success { background: #28a745; }
+        .btn-success:hover { background: #218838; }
         .btn-danger { background: #ff4d4d; }
 
-        .preview { flex: 1; padding: 20px; overflow-y: auto; overflow-x: hidden; display: flex; flex-direction: column; align-items: center; position: relative; }
+        /* การตั้งค่า Preview ให้สามารถเลื่อนดูได้ทุกทิศทาง */
+        .preview { flex: 1; padding: 20px; overflow: auto; display: flex; flex-direction: column; align-items: center; position: relative; }
         
+        #all-pages {
+            zoom: var(--zoom-level, 1);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: max-content;
+            margin: 0 auto;
+        }
+
         .page-a4 { 
             background: white; width: 210mm; height: 296mm; padding: 15mm; margin-bottom: 20px;
             box-shadow: 0 0 15px rgba(0,0,0,0.5); display: flex; flex-direction: column;
             position: relative; flex-shrink: 0; overflow: hidden;
-            transition: transform 0.2s ease-out, margin-bottom 0.2s ease-out;
         }
         .page-legend { margin-top: auto; text-align: center; font-size: 12px; color: #777; padding-top: 10px; border-top: 1px dashed #eee; width: 100%; }
 
@@ -64,21 +75,34 @@
         
         .layout-spaced .main-box { border: 2px solid var(--grid-color); border-radius: 4px; }
         .layout-spaced .pinyin-box { border: 1px solid var(--grid-color); margin-bottom: 4px; border-radius: 4px; }
+        .layout-spaced .meaning-box { border: 1px dashed var(--grid-color); margin-top: 4px; border-radius: 4px; }
+        
         .layout-connected { border-top: 2px solid var(--grid-color); border-left: 2px solid var(--grid-color); }
         .layout-connected .cell-unit { border-right: 2px solid var(--grid-color); border-bottom: 2px solid var(--grid-color); }
         .layout-connected .main-box { border: none !important; }
         .layout-connected .pinyin-box { border: none !important; border-bottom: 1px dashed var(--grid-color); margin-bottom: 0 !important; border-radius: 0; }
+        .layout-connected .meaning-box { border: none !important; border-top: 1px dashed var(--grid-color); margin-top: 0 !important; border-radius: 0; }
+        
         .layout-stripes .cell-unit { border-top: 2px solid var(--grid-color); border-bottom: 2px solid var(--grid-color); border-right: 2px solid var(--grid-color); }
         .layout-stripes .main-box { border: none !important; }
         .layout-stripes .pinyin-box { border: none !important; border-bottom: 1px dashed var(--grid-color); margin-bottom: 0 !important; border-radius: 0; }
+        .layout-stripes .meaning-box { border: none !important; border-top: 1px dashed var(--grid-color); margin-top: 0 !important; border-radius: 0; }
+        
         .layout-stripes-vert { border-top: 2px solid var(--grid-color); }
         .layout-stripes-vert .cell-unit { border-bottom: 2px solid var(--grid-color); border-left: 2px solid var(--grid-color); border-right: 2px solid var(--grid-color); margin-left: -2px; }
         .layout-stripes-vert .main-box { border: none !important; }
         .layout-stripes-vert .pinyin-box { border: none !important; border-bottom: 1px dashed var(--grid-color); margin-bottom: 0 !important; border-radius: 0; }
+        .layout-stripes-vert .meaning-box { border: none !important; border-top: 1px dashed var(--grid-color); margin-top: 0 !important; border-radius: 0; }
 
         .pinyin-box { width: 100%; height: 22px; display: none; align-items: center; justify-content: center; font-size: 12px; font-family: 'Arial', sans-serif; color: #555; box-sizing: border-box; }
         .show-pinyin .pinyin-box { display: flex; }
         .vowel-highlight { background-color: #e0e0e0; color: #000; font-weight: bold; padding: 0 4px; border-radius: 3px; }
+        
+        /* สไตล์สำหรับกล่องคำแปล (ตัดคำขึ้นบรรทัดใหม่) */
+        .meaning-box { width: 100%; height: 26px; display: none; align-items: center; justify-content: center; font-size: 10px; color: #d97706; box-sizing: border-box; overflow: hidden; text-align: center; line-height: 1.1; padding: 0 2px; }
+        .show-meaning .meaning-box { display: flex; }
+        .meaning-text { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; word-break: break-word; }
+
         .main-box { width: 100%; height: 100%; position: relative; display: flex; justify-content: center; align-items: center; box-sizing: border-box; }
         .main-box span { color: #d3d3d3; position: relative; z-index: 1; pointer-events: none; line-height: 1; text-align: center; }
 
@@ -104,7 +128,6 @@
         .bank-item { display: flex; align-items: center; padding: 12px; border: 1px solid #eee; border-radius: 10px; margin-bottom: 10px; text-align: left; background: white; transition: 0.2s; justify-content: space-between; }
         .bank-item:hover { border-color: #ddd; box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
         .bank-logo-wrap { display: flex; align-items: center; gap: 12px; flex: 1; }
-        
         .bank-img { width: 40px; height: 40px; border-radius: 8px; object-fit: contain; background: #fff; border: 1px solid #eee; box-shadow: 0 2px 5px rgba(0,0,0,0.05); padding: 2px; }
         
         .bank-info div { font-size: 14px; font-weight: bold; color: #333; margin-bottom: 2px; }
@@ -131,14 +154,26 @@
             .sidebar.open { transform: translateX(0); }
             .sidebar-overlay { display: block; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.6); z-index: 25; opacity: 0; pointer-events: none; transition: opacity 0.3s ease; }
             .sidebar-overlay.open { opacity: 1; pointer-events: auto; }
-            .preview { padding: 15px; height: calc(100vh - 55px); align-items: center; }
+            .preview { padding: 15px; height: calc(100vh - 55px); }
             .zoom-controls { bottom: 15px; right: 15px; }
+        }
+
+        /* --- Print Styles --- */
+        @media print {
+            * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+            body { background: white !important; display: block; overflow: visible; }
+            .sidebar, .mobile-header, .sidebar-overlay, .zoom-controls, .toast { display: none !important; }
+            .preview { padding: 0 !important; width: 210mm; display: block; overflow: visible; margin: 0 auto; height: auto; }
+            #all-pages { zoom: 1 !important; transform: none !important; margin: 0 !important; }
+            .page-a4 { box-shadow: none !important; margin: 0 !important; border: none !important; page-break-after: always; }
         }
 
         .pdf-exporting body { background: white; flex-direction: column; }
         .pdf-exporting .sidebar, .pdf-exporting .mobile-header, .pdf-exporting .sidebar-overlay, .pdf-exporting .zoom-controls { display: none !important; }
-        .pdf-exporting .preview { padding: 0 !important; margin: 0 auto; width: 210mm; overflow: hidden; align-items: center; height: auto; }
-        .pdf-exporting .page-a4 { margin: 0 !important; box-shadow: none !important; border: none !important; page-break-after: always; transform: none !important; }
+        .pdf-exporting .preview { padding: 0 !important; margin: 0 auto; width: 210mm; overflow: hidden; height: auto; }
+        .pdf-exporting #all-pages { zoom: 1 !important; transform: none !important; margin: 0 auto !important; }
+        .pdf-exporting .page-a4 { margin: 0 !important; box-shadow: none !important; border: none !important; page-break-after: always; }
+        
         .credit-box { text-align: center; margin-top: 10px; font-size: 11px; color: #888; border-top: 1px solid #eee; padding-top: 15px; }
         .credit-box a { color: var(--primary); text-decoration: none; font-weight: bold; }
     </style>
@@ -196,6 +231,17 @@
                 <option value="kata_daku" data-search="japan jp kata daku คาตาคานะ ขุ่น เต็นเต็น มารุ" data-i18n-opt="optJpKataDaku">🇯🇵 คาตาคานะ เสียงขุ่น (ガ-ポ)</option>
                 <option value="kata_yoon" data-search="japan jp kata yoon sokuon คาตาคานะ ควบกล้ำ" data-i18n-opt="optJpKataYoon">🇯🇵 คาตาคานะ ควบกล้ำ/หยุด (キャ-ッ)</option>
             </optgroup>
+            <optgroup label="ภาษาญี่ปุ่น - JLPT (Kanji)" data-i18n-grp="grpJpJLPT">
+                <option value="jp_n5" data-i18n-opt="optJpN5">🇯🇵 JLPT N5 (คันจิพื้นฐาน)</option>
+                <option value="jp_n4" data-i18n-opt="optJpN4">🇯🇵 JLPT N4</option>
+                <option value="jp_n3" data-i18n-opt="optJpN3">🇯🇵 JLPT N3</option>
+                <option value="jp_n2" data-i18n-opt="optJpN2">🇯🇵 JLPT N2</option>
+                <option value="jp_n1" data-i18n-opt="optJpN1">🇯🇵 JLPT N1</option>
+            </optgroup>
+            <optgroup label="ตัวเลข (Numbers)" data-i18n-grp="grpNum">
+                <option value="num_arab" data-i18n-opt="optNumArab">🔢 เลขอารบิก (0-9)</option>
+                <option value="num_thai" data-i18n-opt="optNumThai">🔢 เลขไทย (๐-๙)</option>
+            </optgroup>
             <optgroup label="สากล (Global)" data-i18n-grp="grpGlobal">
                 <option value="abc" data-search="english eng upper อังกฤษ พิมพ์ใหญ่" data-i18n-opt="optEnUp">🇬🇧 English Upper (A-Z)</option>
                 <option value="abc_low" data-search="english eng lower อังกฤษ พิมพ์เล็ก" data-i18n-opt="optEnLow">🇬🇧 English Lower (a-z)</option>
@@ -209,6 +255,21 @@
     </div>
 
     <div class="group">
+        <label data-i18n="fontLabel">รูปแบบฟอนต์ (Font Family)</label>
+        <select id="fontSelect" class="select-ui">
+            <option value="'Sarabun', sans-serif" data-i18n-opt="optFontSara">Sarabun (ค่าเริ่มต้น)</option>
+            <option value="'TH SarabunPSK', sans-serif">TH SarabunPSK</option>
+            <option value="'TH Sarabun New', sans-serif">TH Sarabun New</option>
+            <option value="'TH SarabunIT9', sans-serif">TH SarabunIT9</option>
+            <option value="'Noto Sans JP', sans-serif" data-i18n-opt="optFontJP">Noto Sans JP (ญี่ปุ่น)</option>
+            <option value="'Noto Sans KR', sans-serif" data-i18n-opt="optFontKR">Noto Sans KR (เกาหลี)</option>
+            <option value="'Noto Sans SC', sans-serif" data-i18n-opt="optFontSC">Noto Sans SC (จีน)</option>
+            <option value="Arial, sans-serif" data-i18n-opt="optFontArial">Arial (สากล)</option>
+            <option value="'Courier New', monospace">Courier New</option>
+        </select>
+    </div>
+
+    <div class="group">
         <label data-i18n="textLabel">ข้อความต้นแบบ (คั่นด้วยลูกน้ำ ,)</label>
         <input type="text" id="textInput" class="control" placeholder="พิมพ์ข้อความที่ต้องการ..." data-i18n-ph="textPh">
     </div>
@@ -217,8 +278,15 @@
         <label style="color: #4a90e2;" data-i18n="customReadLabel">💡 คำอ่านกำหนดเอง (คั่นด้วยลูกน้ำ ,)</label>
         <input type="text" id="customReadingInput" class="control" placeholder="เช่น a,b,c..." data-i18n-ph="customReadPh" style="border-color: #cbd5e1;">
     </div>
+    
+    <div class="group" id="customMeaningGroup" style="background: #fff4e6; padding: 10px; border-radius: 8px; border: 1px solid #ffd8a8; margin-top: 5px;">
+        <label style="color: #d97706; display:flex; align-items:center; gap:8px;">
+            <input type="checkbox" id="showMeaning"> <span data-i18n="meaningLabel">📖 แสดงช่องคำแปล (Meaning)</span>
+        </label>
+        <input type="text" id="customMeaningInput" class="control" placeholder="ใส่คำแปลตามลำดับ เช่น นก,หมา,แมว..." data-i18n-ph="customMeanPh" style="border-color: #fcd34d; margin-top: 5px;">
+    </div>
 
-    <div class="row-flex">
+    <div class="row-flex" style="margin-top: 5px;">
         <div class="group" style="flex:1">
             <label data-i18n="colsLabel">จำนวนคอลัมน์</label>
             <input type="number" id="cols" class="control" value="10" min="1">
@@ -246,9 +314,14 @@
         </select>
     </div>
 
-    <div class="group" id="repeatGroup" style="display:none;">
+    <div class="group" id="repeatGroupHoriz" style="display:none;">
         <label style="display:flex; align-items:center; gap:8px; cursor:pointer; color: var(--primary);">
-            <input type="checkbox" id="repeatRow"> <b data-i18n="repeatLabel">ทำซ้ำตัวอักษรให้เต็มแถว</b>
+            <input type="checkbox" id="repeatRowHoriz"> <b data-i18n="repeatLabelHoriz">ทำซ้ำตัวอักษรให้เต็มแถว (แนวนอน)</b>
+        </label>
+    </div>
+    <div class="group" id="repeatGroupVert" style="display:none;">
+        <label style="display:flex; align-items:center; gap:8px; cursor:pointer; color: var(--primary);">
+            <input type="checkbox" id="repeatRowVert"> <b data-i18n="repeatLabelVert">ทำซ้ำตัวอักษรให้เต็มคอลัมน์ (แนวตั้ง)</b>
         </label>
     </div>
 
@@ -295,20 +368,25 @@
         </label>
     </div>
 
-    <button class="btn btn-primary" onclick="exportPDF()" data-i18n="btnExport">📥 บันทึกเป็น PDF (A4)</button>
-    <button class="btn btn-danger" onclick="resetForm()" data-i18n="btnReset" style="margin-top: 0;">🔄 ล้างค่าทั้งหมด</button>
+    <div class="row-flex" style="margin-top: 5px;">
+        <button class="btn btn-success" onclick="window.print()" data-i18n="btnPrint">🖨️ พิมพ์ (Print)</button>
+        <button class="btn btn-primary" onclick="exportPDF()" data-i18n="btnExport">📥 โหลด PDF</button>
+    </div>
+    <button class="btn btn-danger" onclick="resetForm()" data-i18n="btnReset">🔄 ล้างค่าทั้งหมด</button>
 
     <div class="credit-box">
         <span data-i18n="creditTxt">สร้างสรรค์และพัฒนาโดย</span> <br>
         <a href="https://github.com/chaiwat20180" target="_blank">github.com/chaiwat20180</a>
-        <br><br>
-        <div id="sfc6jgfrsfjs6rany2sdbkh3f6149cdjbf9"></div>
         <script type="text/javascript" src="https://counter1.optistats.ovh/private/counter.js?c=6jgfrsfjs6rany2sdbkh3f6149cdjbf9&down=async" async></script>
+        <br><br>
+         <div id="sfc6jgfrsfjs6rany2sdbkh3f6149cdjbf9"></div>
         <noscript><a href="https://www.freecounterstat.com" title="web counter"><img src="https://counter1.optistats.ovh/private/freecounterstat.php?c=6jgfrsfjs6rany2sdbkh3f6149cdjbf9" border="0" title="web counter" alt="web counter"></a></noscript>
     </div>
 </div>
 
-<div class="preview" id="all-pages"></div>
+<div class="preview" id="preview-container">
+    <div id="all-pages"></div>
+</div>
 
 <div class="modal-overlay" id="donateModal" onclick="closeDonateModal(event)">
     <div class="modal-content" onclick="event.stopPropagation()">
@@ -323,15 +401,9 @@
             <button class="tab-btn" onclick="switchDonateTab('tab-bank')" data-i18n="tabBank">ธนาคาร</button>
         </div>
 
-        <div class="tab-pane active" id="tab-qr">
-            </div>
-
-        <div class="tab-pane" id="tab-tmw">
-            </div>
-
-        <div class="tab-pane" id="tab-bank">
-            </div>
-
+        <div class="tab-pane active" id="tab-qr"></div>
+        <div class="tab-pane" id="tab-tmw"></div>
+        <div class="tab-pane" id="tab-bank"></div>
     </div>
 </div>
 <script>
@@ -343,52 +415,18 @@
     // Donate (Object)
     // ==========================================
     const DONATE_CONFIG = {
-        promptpay: {
-            phone: "0959394524",
-            formatted: "095-939-4524",
-            accNameTH: "นาย ไชยวัฒน์ ขวัญทา",
-            accNameEN: "Mr. Chaiwat Kwanta"
-        },
-        truemoney: {
-            icon: "https://play-lh.googleusercontent.com/6I2IYbIg4rhGUgs0UxP_5q6wmJmlBjBrlQ9f0_FAN94yOzwmrtEteifCdPPd1-chY_NX", 
-            phone: "0959394524",
-            formatted: "095-939-4524",
-            accNameTH: "นาย ไชยวัฒน์ ขวัญทา",
-            accNameEN: "Mr. Chaiwat Kwanta"
-        },
+        promptpay: { phone: "0959394524", formatted: "095-939-4524", accNameTH: "นาย ไชยวัฒน์ ขวัญทา", accNameEN: "Mr. Chaiwat Kwanta" },
+        truemoney: { icon: "https://play-lh.googleusercontent.com/6I2IYbIg4rhGUgs0UxP_5q6wmJmlBjBrlQ9f0_FAN94yOzwmrtEteifCdPPd1-chY_NX", phone: "0959394524", formatted: "095-939-4524", accNameTH: "นาย ไชยวัฒน์ ขวัญทา", accNameEN: "Mr. Chaiwat Kwanta" },
         banks: [
-            {
-                id: "kbank",
-                icon: "https://www.kasikornbank.com/SiteCollectionDocuments/about/img/logo/logo.png", 
-                nameTH: "กสิกรไทย (KBank)",
-                nameEN: "Kasikorn Bank (KBank)",
-                accNameTH: "นาย ไชยวัฒน์ ขวัญทา",
-                accNameEN: "Mr. Chaiwat Kwanta",
-                accNum: "022-8-53333-5", 
-                rawNum: "0228533335"
-            },
-            {
-                id: "scb",
-                icon: "https://play-lh.googleusercontent.com/j-9a3HbVZoX337-MLdkmYt75yUfN5ahis8rOnE09972cFLdVn7Z5Dzu3Guo8ldUv2H4x", 
-                nameTH: "ไทยพาณิชย์ (SCB)",
-                nameEN: "Siam Commercial Bank (SCB)",
-                accNameTH: "นาย ไชยวัฒน์ ขวัญทา",
-                accNameEN: "Mr. Chaiwat Kwanta",
-                accNum: "653-422680-7", 
-                rawNum: "6534226807"
-            }
+            { id: "kbank", icon: "https://www.kasikornbank.com/SiteCollectionDocuments/about/img/logo/logo.png", nameTH: "กสิกรไทย (KBank)", nameEN: "Kasikorn Bank (KBank)", accNameTH: "นาย ไชยวัฒน์ ขวัญทา", accNameEN: "Mr. Chaiwat Kwanta", accNum: "022-8-53333-5", rawNum: "0228533335" },
+            { id: "scb", icon: "https://play-lh.googleusercontent.com/j-9a3HbVZoX337-MLdkmYt75yUfN5ahis8rOnE09972cFLdVn7Z5Dzu3Guo8ldUv2H4x", nameTH: "ไทยพาณิชย์ (SCB)", nameEN: "Siam Commercial Bank (SCB)", accNameTH: "นาย ไชยวัฒน์ ขวัญทา", accNameEN: "Mr. Chaiwat Kwanta", accNum: "653-422680-7", rawNum: "6534226807" }
         ]
     };
 
-    // --- ฟังก์ชันสร้าง UI Donate อัตโนมัติ ---
     function renderDonateInfo() {
         const lang = currentLang;
-        
-        // 1. เรนเดอร์ QR Code พร้อมเพย์
         el('tab-qr').innerHTML = `
-            <div class="qr-placeholder">
-                <img src="https://promptpay.io/${DONATE_CONFIG.promptpay.phone}.png" alt="PromptPay QR">
-            </div>
+            <div class="qr-placeholder"><img src="https://promptpay.io/${DONATE_CONFIG.promptpay.phone}.png" alt="PromptPay QR"></div>
             <div style="color: #666; font-size: 14px; margin-bottom: 5px;" data-i18n="qrDesc">${lang === 'th' ? 'สแกน QR Code ด้วยแอปพลิเคชันธนาคาร' : 'Scan QR Code with any banking app'}</div>
             <div style="font-size: 16px; font-weight: bold; color: var(--primary); margin-bottom: 12px;">
                 ${lang === 'th' ? DONATE_CONFIG.promptpay.accNameTH : DONATE_CONFIG.promptpay.accNameEN}
@@ -398,8 +436,6 @@
                 <button class="copy-btn" onclick="copyText('${DONATE_CONFIG.promptpay.phone}')">📋 ${lang === 'th' ? 'คัดลอก' : 'Copy'}</button>
             </div>
         `;
-
-        // 2. เรนเดอร์ TrueMoney Wallet
         el('tab-tmw').innerHTML = `
             <div class="bank-item">
                 <div class="bank-logo-wrap">
@@ -413,8 +449,6 @@
                 <button class="copy-btn" onclick="copyText('${DONATE_CONFIG.truemoney.phone}')">📋 ${lang === 'th' ? 'คัดลอก' : 'Copy'}</button>
             </div>
         `;
-
-        // 3. เรนเดอร์ Banks
         el('tab-bank').innerHTML = DONATE_CONFIG.banks.map(bank => `
             <div class="bank-item">
                 <div class="bank-logo-wrap">
@@ -430,7 +464,6 @@
         `).join('');
     }
 
-    // ---  (Copy to Clipboard) ---
     function copyText(text) {
         navigator.clipboard.writeText(text).then(() => {
             const toast = el('copyToast');
@@ -447,10 +480,7 @@
     function toggleSidebar() { $('#sidebar').toggleClass('open'); $('#sidebarOverlay').toggleClass('open'); }
 
     function openDonateModal() { el('donateModal').classList.add('show'); }
-    function closeDonateModal(e) {
-        if(e && e.target !== el('donateModal')) return;
-        el('donateModal').classList.remove('show');
-    }
+    function closeDonateModal(e) { if(e && e.target !== el('donateModal')) return; el('donateModal').classList.remove('show'); }
     function switchDonateTab(tabId) {
         $('.tab-btn').removeClass('active'); $('.tab-pane').removeClass('active');
         $(`.tab-btn[onclick="switchDonateTab('${tabId}')"]`).addClass('active');
@@ -466,6 +496,13 @@
         kata: "ア,イ,ウ,エ,オ,カ,キ,ク,ケ,コ,サ,シ,ス,セ,ソ,タ,チ,ツ,テ,ト,ナ,ニ,ヌ,ネ,ノ,ハ,ヒ,フ,ヘ,ホ,マ,ミ,ム,メ,モ,ヤ,ユ,ヨ,ラ,リ,ル,レ,ロ,ワ,ヲ,ン",
         kata_daku: "ガ,ギ,グ,ゲ,ゴ,ザ,ジ,ズ,ゼ,ゾ,ダ,ヂ,ヅ,デ,ド,バ,ビ,ブ,ベ,ボ,パ,ピ,プ,ペ,ポ",
         kata_yoon: "キャ,キュ,キョ,シャ,シュ,ショ,チャ,チュ,チョ,ニャ,ニュ,ニョ,ヒャ,ヒュ,ヒョ,ミャ,ミュ,ミョ,リャ,リュ,リョ,ギャ,ギュ,ギョ,ジャ,ジュ,ジョ,ビャ,ビュ,ビョ,ピャ,ピュ,ピョ,ッ",
+        jp_n5: "日,一,国,会,人,年,大,十,二,本,中,長,出,三,時,行,見,月,分,後,前,生,五,間,上,東,四,今,金,九",
+        jp_n4: "同,事,自,社,発,者,地,業,方,新,場,員,立,開,手,力,問,代,明,動,京,目,通,言,理,体,田,主,題,意",
+        jp_n3: "政,議,民,連,対,部,合,市,内,相,定,回,選,米,実,関,決,全,表,戦,経,最,調,化,当,約,首,法,性,要",
+        jp_n2: "党,協,総,区,領,県,設,保,改,第,結,派,府,査,委,産,建,治,権,期,各,命,機,挙,果,協,案,件,明,活",
+        jp_n1: "氏,統,死,解,責,未,盟,従,創,暴,渉,歓,司,編,華,赴,犠,巨,企,購,免,施,廃,伊,廷,籍,吉,剝,妥,脅",
+        num_arab: "0,1,2,3,4,5,6,7,8,9",
+        num_thai: "๐,๑,๒,๓,๔,๕,๖,๗,๘,๙",
         abc: "A,B,C,D,E,F,G,H,I,J,K,L,M,N,O,P,Q,R,S,T,U,V,W,X,Y,Z",
         abc_low: "a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z",
         kor: "ㄱ,ㄲ,ㄴ,ㄷ,ㄸ,ㄹ,ㅁ,ㅂ,ㅃ,ㅅ,ㅆ,ㅇ,ㅈ,ㅉ,ㅊ,ㅋ,ㅌ,ㅍ,ㅎ,ㅏ,ㅐ,ㅑ,ㅒ,ㅓ,ㅔ,ㅕ,ㅖ,ㅗ,ㅘ,ㅙ,ㅚ,ㅛ,ㅜ,ㅝ,ㅞ,ㅟ,ㅠ,ㅡ,ㅢ,ㅣ",
@@ -476,9 +513,20 @@
     };
 
     const readingMap = {};
-    function buildDictionary(charStr, readingStr) {
+    const meaningMap = {};
+    
+    function buildDictionary(charStr, readingStr, meaningStrTH = "", meaningStrEN = "") {
         const cArr = charStr.split(','); const rArr = readingStr.split(',');
-        for(let i=0; i<cArr.length; i++) if(cArr[i] && rArr[i]) readingMap[cArr[i]] = rArr[i];
+        const mThArr = meaningStrTH ? meaningStrTH.split(',') : [];
+        const mEnArr = meaningStrEN ? meaningStrEN.split(',') : [];
+        for(let i=0; i<cArr.length; i++) {
+            if (cArr[i] && rArr[i]) readingMap[cArr[i]] = rArr[i];
+            if (cArr[i]) {
+                if (!meaningMap[cArr[i]]) meaningMap[cArr[i]] = {};
+                if (mThArr[i]) meaningMap[cArr[i]]['th'] = mThArr[i];
+                if (mEnArr[i]) meaningMap[cArr[i]]['en'] = mEnArr[i];
+            }
+        }
     }
     
     buildDictionary(presets.thai, "gor,khor,khor,khor,khor,khor,ngor,jor,chor,chor,sor,chor,yor,dor,tor,thor,thor,thor,nor,dor,tor,thor,thor,thor,nor,bor,por,phor,for,phor,for,phor,mor,yor,ror,lor,wor,sor,sor,sor,hor,lor,or,hor");
@@ -489,6 +537,37 @@
     buildDictionary(presets.kata, "a,i,u,e,o,ka,ki,ku,ke,ko,sa,shi,su,se,so,ta,chi,tsu,te,to,na,ni,nu,ne,no,ha,hi,fu,he,ho,ma,mi,mu,me,mo,ya,yu,yo,ra,ri,ru,re,ro,wa,wo,n");
     buildDictionary(presets.kata_daku, "ga,gi,gu,ge,go,za,ji,zu,ze,zo,da,ji,zu,de,do,ba,bi,bu,be,bo,pa,pi,pu,pe,po");
     buildDictionary(presets.kata_yoon, "kya,kyu,kyo,sha,shu,sho,cha,chu,cho,nya,nyu,nyo,hya,hyu,hyo,mya,myu,myo,rya,ryu,ryo,gya,gyu,gyo,ja,ju,jo,bya,byu,byo,pya,pyu,pyo,(tsu)");
+    
+    // JLPT Dictionaries (Char, Reading, Meaning TH, Meaning EN)
+    buildDictionary(presets.jp_n5, 
+        "nichi,ichi,koku,kai,hito,nen,dai,juu,ni,hon,naka,chou,de,san,ji,ik,mi,tsuki,bun,go,mae,sei,go,kan,ue,higashi,yon,ima,kin,kyuu",
+        "วัน,หนึ่ง,ประเทศ,พบ,คน,ปี,ใหญ่,สิบ,สอง,หนังสือ,กลาง,ยาว,ออก,สาม,เวลา,ไป,ดู,เดือน,นาที,หลัง,หน้า,ชีวิต/เกิด,ห้า,ระหว่าง,บน,ตะวันออก,สี่,ตอนนี้,ทอง/เงิน,เก้า",
+        "Day,One,Country,Meet,Person,Year,Big,Ten,Two,Book,Middle,Long,Exit,Three,Time,Go,See,Month,Minute,After,Before,Life/Birth,Five,Between,Up,East,Four,Now,Gold/Money,Nine"
+    );
+    buildDictionary(presets.jp_n4, 
+        "dou,ji,ji,sha,hatsu,sha,chi,gyou,hou,shin,ba,in,ta,kai,te,chikara,mon,dai,mei,dou,kyou,me,tsuu,gen,ri,tai,ta,shu,dai,i",
+        "เหมือน,ธุระ,ตนเอง,บริษัท,ปล่อย/ออก,ผู้,พื้นดิน,ธุรกิจ,วิธี/ทาง,ใหม่,สถานที่,พนักงาน,ยืน,เปิด,มือ,พลัง,ถาม,แทน,สว่าง,เคลื่อนไหว,เมืองหลวง,ตา,ผ่าน,พูด,เหตุผล,ร่างกาย,นาข้าว,หลัก,หัวข้อ,ความหมาย",
+        "Same,Matter,Self,Company,Emit,Person,Ground,Business,Way/Dir,New,Place,Member,Stand,Open,Hand,Power,Question,Sub,Bright,Move,Capital,Eye,Pass,Say,Reason,Body,Rice field,Main,Topic,Meaning"
+    );
+    buildDictionary(presets.jp_n3, 
+        "sei,gi,min,ren,tai,bu,gou,shi,nai,sou,tei,kai,sen,kome,jitsu,kan,ketsu,zen,hyou,sen,kei,sai,chou,ka,tou,yaku,shu,hou,sei,you",
+        "การเมือง,ประชุม,ประชาชน,เชื่อม,ตรงข้าม,ส่วน,เข้าด้วยกัน,เมือง,ภายใน,ร่วมกัน,กำหนด,หมุน/ครั้ง,เลือก,ข้าว,ความจริง,เกี่ยวข้อง,ตัดสิน,ทั้งหมด,ตาราง/ผิว,ต่อสู้,ผ่าน/ธุรกิจ,ที่สุด,ตรวจสอบ,เปลี่ยนเป็น,ถูกต้อง,สัญญา,คอ/หัวหน้า,กฎหมาย,เพศ/นิสัย,สำคัญ",
+        "Politics,Debate,People,Connect,Opposite,Part,Fit,City,Inside,Mutual,Decide,Times,Choose,Rice,Truth,Relation,Decide,All,Surface,War,Manage,Most,Investigate,Change,Right,Promise,Neck/Chief,Law,Gender/Nature,Need"
+    );
+    buildDictionary(presets.jp_n2, 
+        "tou,kyou,sou,ku,ryou,ken,setsu,ho,kai,dai,ketsu,ha,fu,sa,i,san,ken,chi,ken,ki,kaku,mei,ki,kyo,ka,kyou,an,ken,mei,katsu",
+        "พรรค,ร่วมมือ,ทั้งหมด,เขต,ครอบครอง,จังหวัด,ตั้งขึ้น,รักษา,แก้ไข,ลำดับที่,ผูก,กลุ่ม,รัฐบาลท้องถิ่น,ตรวจสอบ,มอบหมาย,ผลิต,สร้าง,รักษา,สิทธิ์,ระยะเวลา,แต่ละ,ชีวิต,เครื่องจักร,ยกขึ้น,ผลลัพธ์,ร่วมมือ,แผน,เรื่อง,สว่าง/ชัดเจน,มีชีวิต",
+        "Party,Coop,Total,Ward,Territory,Prefect,Establish,Protect,Reform,Ordinal,Tie,Faction,Govt Office,Investigate,Committee,Produce,Build,Cure/Gov,Right,Period,Each,Life,Machine,Raise,Result,Coop,Plan,Case,Clear,Active"
+    );
+    buildDictionary(presets.jp_n1, 
+        "shi,tou,shi,kai,seki,mi,mei,juu,sou,bou,shou,kan,shi,hen,ka,fu,gi,kyo,ki,kou,men,shi,hai,i,tei,seki,kichi,haku,da,kyou",
+        "นามสกุล,รวบรวม,ตาย,แก้ปัญหา,รับผิดชอบ,ยังไม่,พันธมิตร,ทำตาม,สร้างสรรค์,รุนแรง,เจรจา,ยินดี,จัดการ,ถัก/แก้ไข,งดงาม,ไปยัง,เสียสละ,ใหญ่โต,วางแผน,ซื้อ,ยกเว้น,ดำเนินการ,ยกเลิก,อิตาลี,ศาล,ทะเบียน,โชคดี,ลอกออก,เหมาะสม,ข่มขู่",
+        "Mr/Mrs,Unite,Death,Solve,Blame,Not yet,Alliance,Obey,Create,Violent,Involve,Joy,Administer,Compile,Splendor,Proceed,Sacrifice,Giant,Plan,Purchase,Excuse,Carry out,Abolish,Italy,Court,Register,Good luck,Peel,Compromise,Threat"
+    );
+
+    buildDictionary(presets.num_arab, "zero,one,two,three,four,five,six,seven,eight,nine", "ศูนย์,หนึ่ง,สอง,สาม,สี่,ห้า,หก,เจ็ด,แปด,เก้า", "Zero,One,Two,Three,Four,Five,Six,Seven,Eight,Nine");
+    buildDictionary(presets.num_thai, "zero,one,two,three,four,five,six,seven,eight,nine", "ศูนย์,หนึ่ง,สอง,สาม,สี่,ห้า,หก,เจ็ด,แปด,เก้า", "Zero,One,Two,Three,Four,Five,Six,Seven,Eight,Nine");
+
     buildDictionary(presets.abc, "a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z");
     buildDictionary(presets.abc_low, "a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z");
     buildDictionary(presets.kor, "g,kk,n,d,tt,r,m,b,pp,s,ss,ng,j,jj,ch,k,t,p,h,a,ae,ya,yae,eo,e,yeo,ye,o,wa,wae,oe,yo,u,wo,we,wi,yu,eu,ui,i");
@@ -503,32 +582,44 @@
 
     const translations = {
         th: {
-            btnDonate: "Donate", modalTitle: "💖 สนับสนุนนักพัฒนา", tabQR: "พร้อมเพย์", tabTMW: "TrueMoney", tabBank: "ธนาคาร", qrDesc: "สแกน QR Code ด้วยแอปพลิเคชันธนาคาร", tmwDesc: "ทรูมันนี่ วอเล็ต (TrueMoney)", bankKbank: "กสิกรไทย (KBank)", bankScb: "ไทยพาณิชย์ (SCB)", btnCopy: "📋 คัดลอก",
-            presetLabel: "ชุดตัวอักษร", textLabel: "ข้อความต้นแบบ (คั่นด้วยลูกน้ำ ,)", textPh: "พิมพ์ข้อความที่ต้องการ...", 
+            btnDonate: "Donate", modalTitle: "💖 สนับสนุนนักพัฒนา", tabQR: "พร้อมเพย์", tabTMW: "TrueMoney", tabBank: "ธนาคาร", qrDesc: "สแกน QR Code ด้วยแอปพลิเคชันธนาคาร", btnCopy: "📋 คัดลอก",
+            presetLabel: "ชุดตัวอักษร", fontLabel: "รูปแบบฟอนต์ (Font Family)",
+            textLabel: "ข้อความต้นแบบ (คั่นด้วยลูกน้ำ ,)", textPh: "พิมพ์ข้อความที่ต้องการ...", 
             customReadLabel: "💡 คำอ่านกำหนดเอง (คั่นด้วยลูกน้ำ ,)", customReadPh: "เช่น a,b,c...",
-            colsLabel: "จำนวนคอลัมน์", rowsLabel: "จำนวนแถว (รวม)", dirLabel: "ทิศทางของข้อมูล", dirHoriz: "แนวนอน (ซ้ายไปขวา)", dirVert: "แนวตั้ง (บนลงล่าง)", modeLabel: "โหมดการแสดงตัวอักษร", modeModel: "เฉพาะแถว/คอลัมน์แรก (คัดตาม)", modeAll: "แสดงเรียงต่อเนื่อง (ครบทุกตัว)", modeRepeat: "วนซ้ำข้อความจนเต็มหน้ากระดาษ", repeatLabel: "ทำซ้ำตัวอักษรให้เต็มแถว", 
+            meaningLabel: "📖 แสดงช่องคำแปล (Meaning)", customMeanPh: "ใส่คำแปลตามลำดับ เช่น นก,หมา,แมว...",
+            colsLabel: "จำนวนคอลัมน์", rowsLabel: "จำนวนแถว (รวม)", dirLabel: "ทิศทางของข้อมูล", dirHoriz: "แนวนอน (ซ้ายไปขวา)", dirVert: "แนวตั้ง (บนลงล่าง)", modeLabel: "โหมดการแสดงตัวอักษร", modeModel: "เฉพาะแถว/คอลัมน์แรก (คัดตาม)", modeAll: "แสดงเรียงต่อเนื่อง (ครบทุกตัว)", modeRepeat: "วนซ้ำข้อความจนเต็มหน้ากระดาษ", 
+            repeatLabelHoriz: "ทำซ้ำตัวอักษรให้เต็มแถว (แนวนอน)", repeatLabelVert: "ทำซ้ำตัวอักษรให้เต็มคอลัมน์ (แนวตั้ง)",
             layoutLabel: "ลักษณะตาราง (Layout)", laySpace: "แยกเป็นช่อง (Spaced)", layConn: "ตารางติดกัน (Connected)", layStripe: "เชื่อมเฉพาะแนวนอน (Striped Rows)", layStripeV: "เชื่อมเฉพาะแนวตั้ง (Striped Cols)",
             styleLabel: "ลวดลายในช่อง (Inner Grid)", styleSquare: "ช่องว่าง (Blank Square)", styleTian: "จีน - กากบาท (Tian Zi Ge)", styleTianDotted: "จีน - กากบาทแบบจุด (Dotted Tian Zi Ge)", styleMi: "จีน - กากบาท+ทแยง (Mi Zi Ge)", styleJiu: "จีน - 9 ช่อง (Jiu Gong Ge)", styleHui: "จีน - สี่เหลี่ยมซ้อน (Hui Zi Ge)", styleDiag: "ทแยงมุม (Diagonal X)", styleCross: "กากบาทตรง (Cross +)", styleBottom: "เส้นใต้ (Bottom Line)", styleEng: "อังกฤษ (บรรทัด 4 เส้น)", styleCircle: "เกาหลี (วงกลมโฟกัส)",
-            colorLabel: "สีเส้นตาราง", pinyinLabel: "แสดงช่องคำอ่าน / Pinyin", autoReadLabel: "เติมคำอ่านอัตโนมัติ (แถบเทา = สระ)", btnExport: "📥 บันทึกเป็น PDF (A4)", btnReset: "🔄 ล้างค่าทั้งหมด", optCustom: "กำหนดเอง / Custom",
+            colorLabel: "สีเส้นตาราง", pinyinLabel: "แสดงช่องคำอ่าน / Pinyin", autoReadLabel: "เติมคำอ่านอัตโนมัติ (แถบเทา = สระ)", btnExport: "📥 โหลด PDF", btnPrint: "🖨️ พิมพ์ (Print)", btnReset: "🔄 ล้างค่าทั้งหมด", optCustom: "กำหนดเอง / Custom",
             legendTxt: "* หมายเหตุ: แถบสีเทา (<span class='vowel-highlight'>a</span>) คือ สระ (Vowels)", creditTxt: "สร้างสรรค์และพัฒนาโดย",
             grpThai: "ภาษาไทย (Thai)", optThCon: "🇹🇭 พยัญชนะ (ก-ฮ)", optThVow: "🇹🇭 สระไทย (32 เสียง)",
             grpJp: "ภาษาญี่ปุ่น (Japanese)", optJpHira: "🇯🇵 ฮิรางานะ พื้นฐาน (あ-ん)", optJpHiraDaku: "🇯🇵 ฮิรางานะ เสียงขุ่น (が-ぽ)", optJpHiraYoon: "🇯🇵 ฮิรางานะ ควบกล้ำ/หยุด (きゃ-っ)",
             optJpKata: "🇯🇵 คาตาคานะ พื้นฐาน (ア-ン)", optJpKataDaku: "🇯🇵 คาตาคานะ เสียงขุ่น (ガ-ポ)", optJpKataYoon: "🇯🇵 คาตาคานะ ควบกล้ำ/หยุด (キャ-ッ)",
-            grpGlobal: "สากล (Global)", optEnUp: "🇬🇧 English Upper (A-Z)", optEnLow: "🇬🇧 English Lower (a-z)", optKor: "🇰🇷 Korean Hangul", optRus: "🇷🇺 Russian Cyrillic", optGre: "🇬🇷 Greek (Alpha-Omega)", optSpa: "🇪🇸 Spanish (Alfabeto)", optGer: "🇩🇪 German (Alphabet)"
+            grpJpJLPT: "ภาษาญี่ปุ่น - JLPT (Kanji)", optJpN5: "🇯🇵 JLPT N5 (คันจิพื้นฐาน)", optJpN4: "🇯🇵 JLPT N4", optJpN3: "🇯🇵 JLPT N3", optJpN2: "🇯🇵 JLPT N2", optJpN1: "🇯🇵 JLPT N1",
+            grpNum: "ตัวเลข (Numbers)", optNumArab: "🔢 เลขอารบิก (0-9)", optNumThai: "🔢 เลขไทย (๐-๙)",
+            grpGlobal: "สากล (Global)", optEnUp: "🇬🇧 English Upper (A-Z)", optEnLow: "🇬🇧 English Lower (a-z)", optKor: "🇰🇷 Korean Hangul", optRus: "🇷🇺 Russian Cyrillic", optGre: "🇬🇷 Greek (Alpha-Omega)", optSpa: "🇪🇸 Spanish (Alfabeto)", optGer: "🇩🇪 German (Alphabet)",
+            optFontSara: "Sarabun (ค่าเริ่มต้น)", optFontJP: "Noto Sans JP (ญี่ปุ่น)", optFontKR: "Noto Sans KR (เกาหลี)", optFontSC: "Noto Sans SC (จีน)", optFontArial: "Arial (สากล)"
         },
         en: {
-            btnDonate: "Donate", modalTitle: "💖 Support Developer", tabQR: "PromptPay", tabTMW: "TrueMoney", tabBank: "Banks", qrDesc: "Scan QR Code with any banking app", tmwDesc: "TrueMoney Wallet", bankKbank: "Kasikorn Bank (KBank)", bankScb: "Siam Commercial Bank (SCB)", btnCopy: "📋 Copy",
-            presetLabel: "Character Set", textLabel: "Practice Text (Comma separated)", textPh: "Type your text here...", 
+            btnDonate: "Donate", modalTitle: "💖 Support Developer", tabQR: "PromptPay", tabTMW: "TrueMoney", tabBank: "Banks", qrDesc: "Scan QR Code with any banking app", btnCopy: "📋 Copy",
+            presetLabel: "Character Set", fontLabel: "Font Family",
+            textLabel: "Practice Text (Comma separated)", textPh: "Type your text here...", 
             customReadLabel: "💡 Custom Readings (Comma separated)", customReadPh: "e.g., a,b,c...",
-            colsLabel: "Columns", rowsLabel: "Rows (Total)", dirLabel: "Direction", dirHoriz: "Horizontal (L to R)", dirVert: "Vertical (Top to Bottom)", modeLabel: "Display Mode", modeModel: "First Row/Col Only (Trace)", modeAll: "Continuous (Show all)", modeRepeat: "Repeat to fill page", repeatLabel: "Repeat char in row", 
+            meaningLabel: "📖 Show Meaning Box", customMeanPh: "e.g., bird,dog,cat...",
+            colsLabel: "Columns", rowsLabel: "Rows (Total)", dirLabel: "Direction", dirHoriz: "Horizontal (L to R)", dirVert: "Vertical (Top to Bottom)", modeLabel: "Display Mode", modeModel: "First Row/Col Only (Trace)", modeAll: "Continuous (Show all)", modeRepeat: "Repeat to fill page", 
+            repeatLabelHoriz: "Repeat char in row (Horiz)", repeatLabelVert: "Repeat char in col (Vert)", 
             layoutLabel: "Grid Layout", laySpace: "Spaced Grid", layConn: "Connected Table", layStripe: "Striped Rows", layStripeV: "Striped Cols",
             styleLabel: "Inner Grid Style", styleSquare: "Blank Square", styleTian: "Chinese (Tian Zi Ge)", styleTianDotted: "Chinese (Dotted Tian Zi Ge)", styleMi: "Chinese (Mi Zi Ge)", styleJiu: "Chinese (Jiu Gong Ge)", styleHui: "Chinese (Hui Zi Ge)", styleDiag: "Diagonal (X)", styleCross: "Cross (+)", styleBottom: "Bottom Line", styleEng: "English (4 Lines)", styleCircle: "Korean (Focus Circle)",
-            colorLabel: "Grid Color", pinyinLabel: "Show Pronunciation Box", autoReadLabel: "Auto-fill Pronunciation (Gray = Vowels)", btnExport: "📥 Export PDF (A4)", btnReset: "🔄 Reset All", optCustom: "Custom Text",
+            colorLabel: "Grid Color", pinyinLabel: "Show Pronunciation Box", autoReadLabel: "Auto-fill Pronunciation (Gray = Vowels)", btnExport: "📥 Export PDF", btnPrint: "🖨️ Print", btnReset: "🔄 Reset All", optCustom: "Custom Text",
             legendTxt: "* Note: Gray highlight (<span class='vowel-highlight'>a</span>) indicates Vowels.", creditTxt: "Created and Developed by",
             grpThai: "Thai Language", optThCon: "🇹🇭 Thai Consonants (ก-ฮ)", optThVow: "🇹🇭 Thai Vowels (32 Sounds)",
             grpJp: "Japanese Language", optJpHira: "🇯🇵 Hiragana Base (あ-ん)", optJpHiraDaku: "🇯🇵 Hiragana Dakuten (が-ぽ)", optJpHiraYoon: "🇯🇵 Hiragana Yōon (きゃ-っ)",
             optJpKata: "🇯🇵 Katakana Base (ア-ン)", optJpKataDaku: "🇯🇵 Katakana Dakuten (ガ-ポ)", optJpKataYoon: "🇯🇵 Katakana Yōon (キャ-ッ)",
-            grpGlobal: "Global Languages", optEnUp: "🇬🇧 English Upper (A-Z)", optEnLow: "🇬🇧 English Lower (a-z)", optKor: "🇰🇷 Korean Hangul", optRus: "🇷🇺 Russian Cyrillic", optGre: "🇬🇷 Greek (Alpha-Omega)", optSpa: "🇪🇸 Spanish (Alfabeto)", optGer: "🇩🇪 German (Alphabet)"
+            grpJpJLPT: "Japanese - JLPT (Kanji)", optJpN5: "🇯🇵 JLPT N5 (Basic Kanji)", optJpN4: "🇯🇵 JLPT N4", optJpN3: "🇯🇵 JLPT N3", optJpN2: "🇯🇵 JLPT N2", optJpN1: "🇯🇵 JLPT N1",
+            grpNum: "Numbers", optNumArab: "🔢 Arabic Numerals (0-9)", optNumThai: "🔢 Thai Numerals (๐-๙)",
+            grpGlobal: "Global Languages", optEnUp: "🇬🇧 English Upper (A-Z)", optEnLow: "🇬🇧 English Lower (a-z)", optKor: "🇰🇷 Korean Hangul", optRus: "🇷🇺 Russian Cyrillic", optGre: "🇬🇷 Greek (Alpha-Omega)", optSpa: "🇪🇸 Spanish (Alfabeto)", optGer: "🇩🇪 German (Alphabet)",
+            optFontSara: "Sarabun (Default)", optFontJP: "Noto Sans JP (Japanese)", optFontKR: "Noto Sans KR (Korean)", optFontSC: "Noto Sans SC (Chinese)", optFontArial: "Arial (Global)"
         }
     };
 
@@ -544,11 +635,18 @@
         $('[data-i18n-opt]').each(function() { $(this).text(t[$(this).attr('data-i18n-opt')]); });
         $('[data-i18n-grp]').each(function() { $(this).attr('label', t[$(this).attr('data-i18n-grp')]); });
         
-        $('#preset, #direction, #fillMode, #gridStyle, #gridLayout').select2('destroy');
+        // Update meaning text input based on selected preset and new lang
+        const val = el('preset').value;
+        if(val !== 'custom') {
+            const txt = presets[val];
+            el('customMeaningInput').value = txt.split(',').map(c => {
+                return (meaningMap[c] && meaningMap[c][currentLang]) || '';
+            }).join(',');
+        }
+
+        $('#preset, #direction, #fillMode, #gridStyle, #gridLayout, #fontSelect').select2('destroy');
         initSelect2(); update(); renderDonateInfo(); 
     }
-
-    function toggleLanguage() { setLanguage(currentLang === 'th' ? 'en' : 'th'); }
 
     function customSearchMatcher(params, data) {
         if ($.trim(params.term) === '') return data;
@@ -561,24 +659,26 @@
 
     function initSelect2() {
         $('#preset').select2({ matcher: customSearchMatcher });
-        $('#direction, #fillMode, #gridStyle, #gridLayout').select2({ minimumResultsForSearch: -1 });
+        $('#direction, #fillMode, #gridStyle, #gridLayout, #fontSelect').select2({ minimumResultsForSearch: -1 });
     }
 
     function getDynamicRowsPerPage(cols) {
         const layout = el('gridLayout').value;
         const showRuby = el('showRuby').checked;
+        const showMeaning = el('showMeaning').checked;
         let gapX = 8, gapY = 8;
         if (layout === 'connected') { gapX = 0; gapY = 0; }
         else if (layout === 'stripes') { gapX = 0; gapY = 8; }
         else if (layout === 'stripes-vert') { gapX = 8; gapY = 0; }
 
         const rubyHeight = showRuby ? 26 : 0;
+        const meaningHeight = showMeaning ? 26 : 0;
         const legendHeight = (showRuby && el('autoRead').checked) ? 35 : 0; 
         const pageContentHeightPx = (258 * 3.7795) - legendHeight; 
         const maxWidthPx = 180 * 3.7795;
         
         let boxSize = Math.floor((maxWidthPx - (cols - 1) * gapX) / cols);
-        let rpp = Math.floor((pageContentHeightPx + gapY) / (boxSize + rubyHeight + gapY));
+        let rpp = Math.floor((pageContentHeightPx + gapY) / (boxSize + rubyHeight + meaningHeight + gapY));
         return Math.max(1, rpp);
     }
 
@@ -589,12 +689,15 @@
         $('#preset').on('select2:select', function (e) {
             const val = e.params.data.id;
             if (val !== 'custom') { 
-                el('textInput').value = presets[val]; 
-                el('customReadingGroup').style.display = 'none'; 
+                const txt = presets[val];
+                el('textInput').value = txt; 
+                el('customReadingInput').value = txt.split(',').map(c => readingMap[c] || '').join(',');
+                el('customMeaningInput').value = txt.split(',').map(c => (meaningMap[c] && meaningMap[c][currentLang]) || '').join(',');
                 autoAdjustRows(true); 
             } else { 
                 el('textInput').value = ''; 
-                el('customReadingGroup').style.display = 'flex'; 
+                el('customReadingInput').value = '';
+                el('customMeaningInput').value = '';
             }
             update();
         });
@@ -604,18 +707,17 @@
             toggleRepeatRow(); update();
         });
         
-        $('#gridStyle, #gridLayout').on('select2:select', update);
+        $('#gridStyle, #gridLayout, #fontSelect').on('select2:select', update);
         
-        ['textInput', 'customReadingInput', 'cols', 'rows', 'gridColor'].forEach(id => {
+        ['textInput', 'customReadingInput', 'customMeaningInput', 'cols', 'rows', 'gridColor'].forEach(id => {
             el(id).addEventListener('input', update);
         });
         
-        ['showRuby', 'autoRead', 'repeatRow'].forEach(id => {
+        ['showRuby', 'autoRead', 'showMeaning', 'repeatRowHoriz', 'repeatRowVert'].forEach(id => {
             el(id).addEventListener('change', update);
         });
 
         $(window).on('resize', scalePaper);
-        if (el('preset').value === 'custom') el('customReadingGroup').style.display = 'flex';
     });
 
     function autoAdjustRows(force) {
@@ -639,17 +741,20 @@
 
     function toggleRepeatRow() {
         const dir = el('direction').value, fill = el('fillMode').value;
-        el('repeatGroup').style.display = (dir === 'vert' && fill === 'model') ? 'block' : 'none';
+        el('repeatGroupHoriz').style.display = (fill === 'model' && dir === 'horiz') ? 'block' : 'none';
+        el('repeatGroupVert').style.display = (fill === 'model' && dir === 'vert') ? 'block' : 'none';
     }
 
     function resetForm() {
-        el('preset').value = 'custom'; el('textInput').value = ''; el('customReadingInput').value = '';
-        el('customReadingGroup').style.display = 'flex';
+        el('preset').value = 'custom'; el('textInput').value = ''; 
+        el('customReadingInput').value = ''; el('customMeaningInput').value = '';
         el('cols').value = 10; el('rows').value = 10; 
         el('direction').value = 'horiz'; el('fillMode').value = 'all'; 
         el('gridLayout').value = 'spaced'; el('gridStyle').value = 'square'; 
+        el('fontSelect').value = "'Sarabun', sans-serif";
         el('gridColor').value = '#888888'; 
-        el('showRuby').checked = true; el('autoRead').checked = true; el('repeatRow').checked = false;
+        el('showRuby').checked = true; el('autoRead').checked = true; el('showMeaning').checked = false;
+        el('repeatRowHoriz').checked = false; el('repeatRowVert').checked = false;
         
         manualZoom = 1.0; lastCalculatedRpp = 0;
         $('.select-ui').trigger('change'); toggleRepeatRow(); update();
@@ -677,15 +782,27 @@
         let rowsRequested = parseInt(el('rows').value) || 1; 
         
         const dir = el('direction').value, fill = el('fillMode').value, style = el('gridStyle').value;
-        const layout = el('gridLayout').value;
+        const layout = el('gridLayout').value, fontFam = el('fontSelect').value;
         const color = el('gridColor').value, showRuby = el('showRuby').checked;
-        const autoRead = el('autoRead').checked, repeatRow = el('repeatRow').checked;
+        const showMeaning = el('showMeaning').checked;
+        const autoRead = el('autoRead').checked;
+        const repeatRowHoriz = el('repeatRowHoriz').checked;
+        const repeatRowVert = el('repeatRowVert').checked;
 
         let tempReadingMap = { ...readingMap };
-        if (el('preset').value === 'custom' && el('customReadingInput').value) {
+        if (el('customReadingInput').value) {
             const customRArr = el('customReadingInput').value.split(',').map(s=>s.trim());
             for(let i=0; i<charArray.length; i++) {
                 if (charArray[i] && customRArr[i]) tempReadingMap[charArray[i]] = customRArr[i];
+            }
+        }
+        
+        let customMArr = [];
+        let meaningMapDict = {};
+        if (el('customMeaningInput').value) {
+            customMArr = el('customMeaningInput').value.split(',').map(s=>s.trim());
+            for(let i=0; i<charArray.length; i++) {
+                if (charArray[i] && customMArr[i]) meaningMapDict[charArray[i]] = customMArr[i];
             }
         }
 
@@ -698,13 +815,14 @@
         else if (layout === 'stripes-vert') { gapX = 8; gapY = 0; }
 
         const rubyHeight = showRuby ? 26 : 0;
+        const meaningHeight = showMeaning ? 26 : 0;
         const legendHeight = (showRuby && autoRead) ? 35 : 0; 
         const pageContentHeightPx = (258 * 3.7795) - legendHeight; 
         const maxWidthPx = 180 * 3.7795;
         
         let boxSize = Math.floor((maxWidthPx - (cols - 1) * gapX) / cols);
-        let rowsPerPage = Math.floor((pageContentHeightPx + gapY) / (boxSize + rubyHeight + gapY));
-        if (rowsPerPage < 1) { rowsPerPage = 1; boxSize = pageContentHeightPx - rubyHeight; }
+        let rowsPerPage = Math.floor((pageContentHeightPx + gapY) / (boxSize + rubyHeight + meaningHeight + gapY));
+        if (rowsPerPage < 1) { rowsPerPage = 1; boxSize = pageContentHeightPx - rubyHeight - meaningHeight; }
 
         if (fill !== 'model') {
             if (lastCalculatedRpp > 0 && rowsRequested === lastCalculatedRpp) {
@@ -719,35 +837,54 @@
 
         const actualTotalRows = rowsRequested; 
         const totalPages = Math.ceil(actualTotalRows / rowsPerPage) || 1;
-        let charMap = new Array(actualTotalRows * cols).fill("");
+        
+        let gridMatrix = Array(actualTotalRows).fill(null).map(() => Array(cols).fill(""));
 
         if (charArray.length > 0) {
             if (fill === 'all') {
-                for (let i = 0; i < charArray.length && i < charMap.length; i++) {
-                    if (dir === 'horiz') charMap[i] = charArray[i];
-                    else charMap[(i % actualTotalRows) * cols + Math.floor(i / actualTotalRows)] = charArray[i];
+                for (let i = 0; i < charArray.length; i++) {
+                    let r, c;
+                    if (dir === 'horiz') { r = Math.floor(i / cols); c = i % cols; } 
+                    else { c = Math.floor(i / actualTotalRows); r = i % actualTotalRows; }
+                    if (r < actualTotalRows && c < cols) gridMatrix[r][c] = charArray[i];
                 }
             } else if (fill === 'repeat') {
-                for (let i = 0; i < charMap.length; i++) {
-                    if (dir === 'horiz') charMap[i] = charArray[i % charArray.length];
-                    else charMap[(i % actualTotalRows) * cols + Math.floor(i / actualTotalRows)] = charArray[i % charArray.length];
+                for (let i = 0; i < actualTotalRows * cols; i++) {
+                    let r, c;
+                    if (dir === 'horiz') { r = Math.floor(i / cols); c = i % cols; } 
+                    else { c = Math.floor(i / actualTotalRows); r = i % actualTotalRows; }
+                    if (r < actualTotalRows && c < cols) gridMatrix[r][c] = charArray[i % charArray.length];
                 }
             } else if (fill === 'model') {
                 if (dir === 'horiz') {
-                    for (let c = 0; c < cols && c < charArray.length; c++) charMap[c] = charArray[c];
-                } else {
                     for (let r = 0; r < actualTotalRows && r < charArray.length; r++) {
-                        charMap[r * cols] = charArray[r];
-                        if (repeatRow) for (let c = 1; c < cols; c++) charMap[r * cols + c] = charArray[r];
+                        gridMatrix[r][0] = charArray[r];
+                        if (repeatRowHoriz) {
+                            for (let c = 1; c < cols; c++) gridMatrix[r][c] = charArray[r];
+                        }
+                    }
+                } else {
+                    for (let c = 0; c < cols && c < charArray.length; c++) {
+                        gridMatrix[0][c] = charArray[c];
+                        if (repeatRowVert) {
+                            for (let r = 1; r < actualTotalRows; r++) gridMatrix[r][c] = charArray[c];
+                        }
                     }
                 }
+            }
+        }
+
+        let charMap = [];
+        for (let r = 0; r < actualTotalRows; r++) {
+            for (let c = 0; c < cols; c++) {
+                charMap.push(gridMatrix[r][c]);
             }
         }
 
         let cellIdx = 0;
         for (let p = 0; p < totalPages; p++) {
             const page = document.createElement('div');
-            page.className = `page-a4 ${showRuby ? 'show-pinyin' : ''}`;
+            page.className = `page-a4 ${showRuby ? 'show-pinyin' : ''} ${showMeaning ? 'show-meaning' : ''}`;
             if (p < totalPages - 1) page.classList.add('page-break-target');
 
             const grid = document.createElement('div');
@@ -759,7 +896,7 @@
                 if (p * rowsPerPage + r >= actualTotalRows) break;
                 for (let c = 0; c < cols; c++) {
                     const char = charMap[cellIdx++] || "";
-                    grid.appendChild(createCell(char, boxSize, style, layout, showRuby, autoRead, fill, dir, repeatRow, c, color, tempReadingMap));
+                    grid.appendChild(createCell(char, boxSize, style, layout, fontFam, showRuby, showMeaning, autoRead, fill, dir, repeatRowHoriz, repeatRowVert, c, r, color, tempReadingMap, meaningMapDict));
                 }
             }
             page.appendChild(grid);
@@ -775,7 +912,7 @@
         scalePaper();
     }
 
-    function createCell(char, size, style, layout, showRuby, autoRead, fill, dir, repeatRow, colIndex, color, mapDict) {
+    function createCell(char, size, style, layout, fontFam, showRuby, showMeaning, autoRead, fill, dir, repH, repV, colIndex, rowIndex, color, mapDict, meaningMapDict) {
         const unit = document.createElement('div');
         unit.className = 'cell-unit'; unit.style.width = `${size}px`;
 
@@ -790,17 +927,18 @@
         const ruby = document.createElement('div');
         ruby.className = 'pinyin-box';
         
-        if (showRuby && autoRead && char) {
-            let showReadingHere = true;
-            if (fill === 'model' && dir === 'vert' && repeatRow && colIndex > 0) showReadingHere = false;
+        let showMetaHere = true;
+        if (fill === 'model') {
+            if (dir === 'horiz' && repH && colIndex > 0) showMetaHere = false;
+            if (dir === 'vert' && repV && rowIndex > 0) showMetaHere = false;
+        }
 
-            if (showReadingHere) {
-                const reading = mapDict[char] || "";
-                if (reading) {
-                    const rSpan = document.createElement('span'); rSpan.innerText = reading;
-                    if (vowels.has(char)) rSpan.className = 'vowel-highlight';
-                    ruby.appendChild(rSpan);
-                }
+        if (showRuby && autoRead && char && showMetaHere) {
+            const reading = mapDict[char] || "";
+            if (reading) {
+                const rSpan = document.createElement('span'); rSpan.innerText = reading;
+                if (vowels.has(char)) rSpan.className = 'vowel-highlight';
+                ruby.appendChild(rSpan);
             }
         }
         
@@ -816,6 +954,7 @@
         
         if (char) {
             const s = document.createElement('span'); s.innerText = char;
+            s.style.fontFamily = fontFam;
             let fSize = size * 0.60; 
             if (/[ゃゅょっャュョッ]/.test(char)) fSize = size * 0.45; 
             else if (char.length > 1) {
@@ -825,32 +964,37 @@
             s.style.fontSize = `${fSize}px`; s.style.whiteSpace = "nowrap"; main.appendChild(s);
         }
         
-        unit.appendChild(ruby); unit.appendChild(main); return unit;
+        const meaning = document.createElement('div');
+        meaning.className = 'meaning-box';
+        
+        if (showMeaning && char && showMetaHere) {
+            const mText = document.createElement('span');
+            mText.className = 'meaning-text';
+            mText.innerText = meaningMapDict[char] || "";
+            meaning.appendChild(mText);
+        }
+        
+        unit.appendChild(ruby); 
+        unit.appendChild(main); 
+        unit.appendChild(meaning);
+        return unit;
     }
 
     function scalePaper() {
+        let finalZoom = manualZoom;
         if (window.innerWidth <= 768) {
             const previewWidth = $('.preview').width();
             const paperWidth = 210 * 3.7795; 
             const autoScale = Math.min(1, (previewWidth - 20) / paperWidth);
-            const finalScale = autoScale * manualZoom;
-            $('.page-a4').css({
-                'transform': `scale(${finalScale})`,
-                'transform-origin': 'top center',
-                'margin-bottom': `calc(-296mm * ${1 - finalScale} + 20px)`
-            });
-        } else {
-            $('.page-a4').css({ 
-                'transform': `scale(${manualZoom})`, 
-                'transform-origin': 'top center',
-                'margin-bottom': `calc(-296mm * ${1 - manualZoom} + 20px)`
-            });
+            finalZoom = autoScale * manualZoom;
         }
+        
+        // ใช้ CSS Variable อัปเดต zoom ให้หน้ากระดาษ
+        document.documentElement.style.setProperty('--zoom-level', finalZoom);
     }
 
     function exportPDF() {
         document.body.classList.add('pdf-exporting');
-        $('.page-a4').css({ 'transform': 'none', 'margin-bottom': '0' });
         
         const element = el('all-pages');
         const opt = {
@@ -861,7 +1005,6 @@
         };
         html2pdf().set(opt).from(element).save().then(() => { 
             document.body.classList.remove('pdf-exporting');
-            scalePaper(); 
         });
     }
 
