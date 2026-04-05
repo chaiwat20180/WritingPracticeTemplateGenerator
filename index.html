@@ -366,7 +366,33 @@
         </div>
     </div>
 </div>
+<div class="modal-overlay" id="customConfirmModal" onclick="closeConfirmModal(event)">
+    <div class="modal-content" onclick="event.stopPropagation()">
+        <div class="modal-header">
+            <h3 id="confirmModalTitle">ยืนยัน</h3>
+            <button class="close-modal" onclick="closeConfirmModal()">✖</button>
+        </div>
+        <div style="padding: 25px; text-align: center;">
+            <p id="confirmModalText" style="font-size: 15px; color: #555; margin-bottom: 25px; line-height: 1.5;"></p>
+            <div class="row-flex" id="confirmModalButtons">
+                </div>
+        </div>
+    </div>
+</div>
 
+<div class="modal-overlay" id="customAlertModal" onclick="closeAlertModal(event)">
+    <div class="modal-content" onclick="event.stopPropagation()">
+        <div class="modal-header">
+            <h3 id="alertModalTitle">แจ้งเตือน</h3>
+            <button class="close-modal" onclick="closeAlertModal()">✖</button>
+        </div>
+        <div style="padding: 25px; text-align: center;">
+            <div id="alertIcon" style="font-size: 40px; margin-bottom: 10px;">✅</div>
+            <p id="alertModalText" style="font-size: 15px; color: #555; margin-bottom: 25px;"></p>
+            <button class="btn btn-primary" style="width: 100%;" onclick="closeAlertModal()">ตกลง (OK)</button>
+        </div>
+    </div>
+</div>
 <script src="assets/js/config.js"></script>
 <script src="assets/js/dictionary.js"></script>
 <script src="assets/js/ui.js"></script>
