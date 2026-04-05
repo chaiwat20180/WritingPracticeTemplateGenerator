@@ -65,7 +65,7 @@ function autoAdjustRows(force) {
     } else {
         if (fill === 'model') {
             if (dir === 'horiz') targetRows = isAltRows ? maxLen * 2 : maxLen;
-            else targetRows = rpp;
+            else targetRows = isAltRows ? maxLen * 2 : maxLen;
         }
         else if (fill === 'all') {
             targetRows = Math.ceil(maxLen / cols);
@@ -81,8 +81,8 @@ function autoAdjustRows(force) {
 
 function toggleRepeatRow() {
     const dir = el('direction').value, fill = el('fillMode').value;
-    el('repeatGroupHoriz').style.display = (fill === 'model' && dir === 'horiz') ? 'block' : 'none';
-    el('repeatGroupVert').style.display = (fill === 'model' && dir === 'vert') ? 'block' : 'none';
+    el('repeatGroupHoriz').style.display = (fill === 'model') ? 'block' : 'none';
+    el('repeatGroupVert').style.display = 'none';
 }
 
 function getGridSVG(style, color) {
@@ -153,6 +153,8 @@ function update() {
     const hasHeader = (hTitle || hName || hClass);
 
     document.documentElement.style.setProperty('--grid-color', color);
+    const gridWeight = el('gridThickness') ? el('gridThickness').value : 1;
+    document.documentElement.style.setProperty('--grid-weight', `${gridWeight}px`);
     const previewArea = el('all-pages'); previewArea.innerHTML = ""; 
 
     let gapX = 8, gapY = 8;
@@ -174,7 +176,6 @@ function update() {
 
     const actualTotalRows = Math.max(1, rowsRequested); 
     
-    // 🟢 สร้างตาราง 2 มิติอย่างปลอดภัย 100% ป้องกัน undefined error
     let gridMatrix = [];
     for (let r = 0; r < actualTotalRows; r++) {
         let rowArr = [];
@@ -184,7 +185,6 @@ function update() {
         gridMatrix.push(rowArr);
     }
 
-    // 🟢 กรองแถวที่ใช้งานได้จริง (ถ้าสลับแถวว่าง แถวคี่จะถูกข้าม)
     let validRows = [];
     for (let r = 0; r < actualTotalRows; r++) {
         if (isAltRows && r % 2 !== 0) continue;
@@ -208,8 +208,8 @@ function update() {
                     }
                 }
             } else { // แนวตั้ง
-                for (let c = 0; c < cols; c++) {
-                    for (let r of validRows) {
+                for (let r of validRows) {
+                    for (let c = 0; c < cols; c++) {
                         if (gridMatrix[r]) {
                             if (fill === 'all' && dataIdx < sourceData.length) {
                                 gridMatrix[r][c] = sourceData[dataIdx];
@@ -226,7 +226,7 @@ function update() {
                 let charIdx = 0;
                 for (let r of validRows) {
                     if (charIdx < sourceData.length && gridMatrix[r]) {
-                        gridMatrix[r] = sourceData[charIdx];
+                        gridMatrix[r][0] = sourceData[charIdx]; // First column only
                         if (repeatRowHoriz) {
                             for (let c = 1; c < cols; c++) gridMatrix[r][c] = sourceData[charIdx];
                         }
@@ -235,18 +235,14 @@ function update() {
                 }
             } else { // แนวตั้ง
                 let charIdx = 0;
-                for (let c = 0; c < cols && charIdx < sourceData.length; c++) {
-                    if (gridMatrix[validRows]) {
-                        gridMatrix[validRows][c] = sourceData[charIdx];
-                        if (repeatRowVert) {
-                            for (let i = 1; i < validRows.length; i++) {
-                                if (gridMatrix[validRows[i]]) {
-                                    gridMatrix[validRows[i]][c] = sourceData[charIdx];
-                                }
-                            }
+                for (let r of validRows) {
+                    if (charIdx < sourceData.length && gridMatrix[r]) {
+                        gridMatrix[r][0] = sourceData[charIdx]; // First column only
+                        if (repeatRowHoriz) {
+                            for (let c = 1; c < cols; c++) gridMatrix[r][c] = sourceData[charIdx];
                         }
+                        charIdx++;
                     }
-                    charIdx++;
                 }
             }
         }
@@ -274,7 +270,6 @@ function update() {
             const headerDiv = document.createElement('div');
             headerDiv.className = 'paper-header-info';
             
-            // 🟢 ดักจับภาษาให้แสดงผลให้ถูกต้องบนกระดาษ
             const lblName = (typeof currentLang !== 'undefined' && currentLang === 'en') ? "Name-Surname:" : "ชื่อ-สกุล:";
             const lblClass = (typeof currentLang !== 'undefined' && currentLang === 'en') ? "Class/No.:" : "ชั้น/เลขที่:";
 
@@ -347,7 +342,7 @@ function createCell(cellData, size, style, layout, fontFam, textStyle, showRuby,
     let showMetaHere = true;
     if (fill === 'model') {
         if (dir === 'horiz' && repH && colIndex > 0) showMetaHere = false;
-        if (dir === 'vert' && repV && rowIndex > 0) showMetaHere = false;
+        if (dir === 'vert' && repH && colIndex > 0) showMetaHere = false;
     }
 
     if (showRuby && autoRead && (char || reading) && showMetaHere) {
