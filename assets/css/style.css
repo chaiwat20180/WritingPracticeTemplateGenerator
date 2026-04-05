@@ -58,27 +58,27 @@
         .grid-container { display: grid; justify-content: center; align-content: start; width: max-content; margin: 0 auto; }
         .cell-unit { display: flex; flex-direction: column; align-items: center; width: 100%; box-sizing: border-box; }
         
-        .layout-spaced .main-box { border: 2px solid var(--grid-color); border-radius: 4px; }
+
+        .layout-spaced .main-box { border: var(--grid-weight, 2px) solid var(--grid-color); border-radius: 4px; }
         .layout-spaced .pinyin-box { border: 1px solid var(--grid-color); margin-bottom: 4px; border-radius: 4px; }
         .layout-spaced .meaning-box { border: 1px dashed var(--grid-color); margin-top: 4px; border-radius: 4px; }
         
-        .layout-connected { border-top: 2px solid var(--grid-color); border-left: 2px solid var(--grid-color); }
-        .layout-connected .cell-unit { border-right: 2px solid var(--grid-color); border-bottom: 2px solid var(--grid-color); }
+        .layout-connected { border-top: var(--grid-weight, 2px) solid var(--grid-color); border-left: var(--grid-weight, 2px) solid var(--grid-color); }
+        .layout-connected .cell-unit { border-right: var(--grid-weight, 2px) solid var(--grid-color); border-bottom: var(--grid-weight, 2px) solid var(--grid-color); }
         .layout-connected .main-box { border: none !important; }
         .layout-connected .pinyin-box { border: none !important; border-bottom: 1px dashed var(--grid-color); margin-bottom: 0 !important; border-radius: 0; }
         .layout-connected .meaning-box { border: none !important; border-top: 1px dashed var(--grid-color); margin-top: 0 !important; border-radius: 0; }
         
-        .layout-stripes .cell-unit { border-top: 2px solid var(--grid-color); border-bottom: 2px solid var(--grid-color); border-right: 2px solid var(--grid-color); }
+        .layout-stripes .cell-unit { border-top: var(--grid-weight, 2px) solid var(--grid-color); border-bottom: var(--grid-weight, 2px) solid var(--grid-color); border-right: var(--grid-weight, 2px) solid var(--grid-color); }
         .layout-stripes .main-box { border: none !important; }
         .layout-stripes .pinyin-box { border: none !important; border-bottom: 1px dashed var(--grid-color); margin-bottom: 0 !important; border-radius: 0; }
         .layout-stripes .meaning-box { border: none !important; border-top: 1px dashed var(--grid-color); margin-top: 0 !important; border-radius: 0; }
         
-        .layout-stripes-vert { border-top: 2px solid var(--grid-color); }
-        .layout-stripes-vert .cell-unit { border-bottom: 2px solid var(--grid-color); border-left: 2px solid var(--grid-color); border-right: 2px solid var(--grid-color); margin-left: -2px; }
+        .layout-stripes-vert { border-top: var(--grid-weight, 2px) solid var(--grid-color); }
+        .layout-stripes-vert .cell-unit { border-bottom: var(--grid-weight, 2px) solid var(--grid-color); border-left: var(--grid-weight, 2px) solid var(--grid-color); border-right: var(--grid-weight, 2px) solid var(--grid-color); margin-left: calc(-1 * var(--grid-weight, 2px)); }
         .layout-stripes-vert .main-box { border: none !important; }
         .layout-stripes-vert .pinyin-box { border: none !important; border-bottom: 1px dashed var(--grid-color); margin-bottom: 0 !important; border-radius: 0; }
         .layout-stripes-vert .meaning-box { border: none !important; border-top: 1px dashed var(--grid-color); margin-top: 0 !important; border-radius: 0; }
-
         .pinyin-box { width: 100%; height: 22px; display: none; align-items: center; justify-content: center; font-size: 12px; font-family: 'Arial', sans-serif; color: #555; box-sizing: border-box; }
         .show-pinyin .pinyin-box { display: flex; }
         .vowel-highlight { background-color: #e0e0e0; color: #000; font-weight: bold; padding: 0 4px; border-radius: 3px; }
@@ -141,6 +141,34 @@
             .sidebar-overlay.open { opacity: 1; pointer-events: auto; }
             .preview { padding: 15px; height: calc(100vh - 55px); }
             .zoom-controls { bottom: 15px; right: 15px; }
+            .sidebar-actions .row-flex {
+                flex-direction: column !important;
+                gap: 8px;
+                margin-bottom: 8px !important;
+            }
+            .sidebar-actions .btn {
+                width: 100% !important;
+                margin: 0 !important;
+                height: 45px !important;
+            }
+
+            /* 2. บังคับให้กล่องที่หุ้มปุ่ม Preset ยอมให้ปุ่มเรียงซ้อนกัน (Wrap) */
+            .sidebar-section .row-flex {
+                flex-wrap: wrap !important;
+            }
+
+            /* 3. บังคับปุ่มจัดการ Preset ทุกปุ่มให้กินพื้นที่ 100% และสูงเท่ากันหมด */
+            .btn-preset-save, 
+            .btn-preset-delete, 
+            .btn-preset-action,
+            .btn-preset-export,
+            .btn-preset-import {
+                flex: 0 0 100% !important; /* บังคับกินพื้นที่ 100% */
+                max-width: 100% !important; /* ห้ามกว้าง/หดเกินนี้ */
+                width: 100% !important;
+                height: 45px !important; 
+                margin: 0 !important; /* เคลียร์ระยะขอบที่กวนกันออก */
+            }
         }
 
         /* --- Print Styles --- */
@@ -408,3 +436,5 @@
         .btn-preset-delete {
             flex: 0 0 60px !important;
         }
+        .btn-secondary { background: #94a3b8; }
+        .btn-secondary:hover { background: #64748b; }
