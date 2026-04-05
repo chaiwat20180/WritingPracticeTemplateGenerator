@@ -141,3 +141,50 @@ function initSelect2() {
     // 🟢 เพิ่ม #paperSize, #paperOrientation เข้าไปเพื่อให้ระบบแปลงเป็น UI สวยงาม
     $('#direction, #fillMode, #gridStyle, #gridLayout, #fontSelect, #textStyle, #paperSize, #paperOrientation').select2({ minimumResultsForSearch: -1 });
 }
+
+let confirmCallback1 = null;
+let confirmCallback2 = null;
+
+function showConfirmModal(title, text, btn1Text, btn1Class, btn1Callback, btn2Text, btn2Class, btn2Callback) {
+    el('confirmModalTitle').innerText = title;
+    el('confirmModalText').innerHTML = text;
+    
+    let buttonsHtml = '';
+    if (btn1Text) {
+        buttonsHtml += `<button class="btn ${btn1Class}" onclick="executeConfirm(1)">${btn1Text}</button>`;
+        confirmCallback1 = btn1Callback;
+    }
+    if (btn2Text) {
+        buttonsHtml += `<button class="btn ${btn2Class}" onclick="executeConfirm(2)">${btn2Text}</button>`;
+        confirmCallback2 = btn2Callback;
+    }
+    
+    el('confirmModalButtons').innerHTML = buttonsHtml;
+    el('customConfirmModal').classList.add('show');
+}
+// --- วางต่อท้ายไฟล์ assets/js/ui.js ---
+
+function executeConfirm(btnIndex) {
+    closeConfirmModal(); // ปิดหน้าต่างยืนยันก่อน
+    if (btnIndex === 1 && confirmCallback1) confirmCallback1();
+    if (btnIndex === 2 && confirmCallback2) confirmCallback2();
+}
+
+function closeConfirmModal(e) {
+    // ถ้าคลิกข้างนอกหน้าต่าง (Overlay) หรือกดปุ่มปิด ให้ซ่อน Modal
+    if (e && e.target !== el('customConfirmModal')) return;
+    el('customConfirmModal').classList.remove('show');
+}
+
+function showAlertModal(title, text, isSuccess = true) {
+    el('alertModalTitle').innerText = title;
+    el('alertModalText').innerText = text;
+    el('alertIcon').innerText = isSuccess ? '✅' : '❌';
+    el('customAlertModal').classList.add('show');
+}
+
+function closeAlertModal(e) {
+    // ถ้าคลิกข้างนอกหน้าต่าง หรือกดปุ่ม OK ให้ซ่อน Modal แจ้งเตือน
+    if (e && e.target !== el('customAlertModal')) return;
+    el('customAlertModal').classList.remove('show');
+}
