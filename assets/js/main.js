@@ -175,45 +175,59 @@ function confirmSavePreset() {
 // --- ระบบลบชุดคำศัพท์ (Delete) ---
 function deleteCustomPreset() {
     const val = el('preset').value;
-    if (!val.startsWith('user_')) return;
+    if (!val || !val.startsWith('user_')) return;
 
-    const confirmMsg = currentLang === 'th' ? "คุณแน่ใจหรือไม่ที่จะลบชุดคำศัพท์นี้?" : "Are you sure you want to delete this preset?";
-    if (!confirm(confirmMsg)) return;
+    // Show confirmation modal before deleting
+    const confirmTitle = currentLang === 'th' ? "ยืนยันการลบ" : "Confirm Deletion";
+    const confirmMessage = currentLang === 'th' ? "คุณแน่ใจหรือไม่ที่จะลบชุดคำศัพท์นี้?" : "Are you sure you want to delete this preset?";
 
-    const idx = parseInt(val.split('_')[1], 10); // Correctly extract the numeric index
-    let saved = JSON.parse(localStorage.getItem('wptg_user_presets') || "[]");
+    showConfirmModal(
+        confirmTitle,
+        confirmMessage,
+        currentLang === 'th' ? "ยกเลิก" : "Cancel",
+        "btn-secondary",
+        null, // No action for cancel
+        currentLang === 'th' ? "ลบ" : "Delete",
+        "btn-danger",
+        () => { // Action for confirm delete
+            const idx = parseInt(val.split('_')[1], 10); // Correctly extract the numeric index
+            let saved = JSON.parse(localStorage.getItem('wptg_user_presets') || "[]");
 
-    if (idx >= 0 && idx < saved.length) {
-        saved.splice(idx, 1); // Remove the preset from the array
-        localStorage.setItem('wptg_user_presets', JSON.stringify(saved)); // Save the updated array
+            if (!isNaN(idx) && idx >= 0 && idx < saved.length) {
+                saved.splice(idx, 1); // Remove the preset from the array
+                localStorage.setItem('wptg_user_presets', JSON.stringify(saved)); // Save the updated array
 
-        updatePresetDropdown(); // Refresh the dropdown
+                updatePresetDropdown(); // Refresh the dropdown
 
-        // Reset the form to default values
-        el('preset').value = 'custom';
-        $('#preset').trigger('change.select2');
-        el('btnDeletePreset').style.display = 'none';
-        el('textInput').value = '';
-        el('customReadingInput').value = '';
-        el('customMeaningInput').value = '';
-        debouncedUpdate();
+                // Reset the form to default values
+                el('preset').value = 'custom';
+                $('#preset').trigger('change.select2');
+                el('btnDeletePreset').style.display = 'none';
+                el('textInput').value = '';
+                el('customReadingInput').value = '';
+                el('customMeaningInput').value = '';
+                debouncedUpdate();
 
-        // Show feedback to the user
-        const toast = el('copyToast');
-        toast.innerText = currentLang === 'th' ? "✅ ลบชุดคำศัพท์สำเร็จ!" : "✅ Preset deleted successfully!";
-        toast.classList.add('show');
-        setTimeout(() => { toast.classList.remove('show'); }, 2500);
-    } else {
-        console.error(`Invalid preset index: ${idx}`);
-    }
+                // Show feedback to the user
+                const toast = el('copyToast');
+                toast.innerText = currentLang === 'th' ? "✅ ลบชุดคำศัพท์สำเร็จ!" : "✅ Preset deleted successfully!";
+                toast.classList.add('show');
+                setTimeout(() => { toast.classList.remove('show'); }, 2500);
+            } else {
+                console.error(`Invalid preset index: ${idx}`);
+            }
+        }
+    );
 }
-
 function updatePresetDropdown() {
-    const saved = JSON.parse(localStorage.getItem('wptg_user_presets') || "[]");
-    if (saved.length === 0) return;
-
+    // 🟢 แก้ไขบั๊ก: ต้องลบแท็ก optgroup ของเดิมทิ้งก่อนเสมอ
     $('#preset optgroup[data-user="true"]').remove();
     
+    const saved = JSON.parse(localStorage.getItem('wptg_user_presets') || "[]");
+    
+    // ถ้าไม่มีข้อมูลแล้ว ให้หยุดแค่นี้ (ตัวเลือกผีจะหายไป)
+    if (saved.length === 0) return;
+
     const groupLabel = typeof translations !== 'undefined' ? translations[currentLang].savedGroup : '⭐ ชุดคำที่บันทึกไว้';
     const group = $('<optgroup label="' + groupLabel + '" data-user="true"></optgroup>');
     saved.forEach((p, idx) => {
@@ -242,6 +256,7 @@ function exportUserPresets() {
 function triggerImport() { el('importFile').click(); }
 
 // ฟังก์ชันนำเข้า (Import)
+// ฟังก์ชันนำเข้า (Import) แบบใช้ Custom Modal
 function importUserPresets(event) {
     const file = event.target.files[0]; // Access the first file
     if (!file) return;
@@ -252,25 +267,43 @@ function importUserPresets(event) {
             const importedData = JSON.parse(e.target.result);
             if (!Array.isArray(importedData)) throw new Error("Invalid format");
 
-            // ถามความสมัครใจว่าจะเขียนทับหรือรวม
             const confirmMsg = currentLang === 'th' 
                 ? "คุณต้องการเพิ่มข้อมูลเข้าไป (Append) หรือลบของเดิมแล้วทับ (Replace)?" 
                 : "Do you want to Add (Append) or Overwrite (Replace) existing presets?";
             
             let currentData = JSON.parse(localStorage.getItem('wptg_user_presets') || "[]");
-            
-            if (confirm(confirmMsg)) {
-                // รวมข้อมูล
-                localStorage.setItem('wptg_user_presets', JSON.stringify([...currentData, ...importedData]));
-            } else {
-                // เขียนทับ
-                localStorage.setItem('wptg_user_presets', JSON.stringify(importedData));
-            }
 
-            updatePresetDropdown();
-            alert(currentLang === 'th' ? "นำเข้าสำเร็จ!" : "Import successful!");
+            showConfirmModal(
+                currentLang === 'th' ? "ยืนยันการนำเข้า" : "Confirm Import",
+                confirmMsg,
+                currentLang === 'th' ? "เขียนทับ" : "Overwrite",
+                "btn-danger",
+                () => { // Overwrite
+                    localStorage.setItem('wptg_user_presets', JSON.stringify(importedData));
+                    finishImport();
+                },
+                currentLang === 'th' ? "เพิ่มต่อท้าย" : "Append",
+                "btn-primary",
+                () => { // Append
+                    localStorage.setItem('wptg_user_presets', JSON.stringify([...currentData, ...importedData]));
+                    finishImport();
+                }
+            );
+
+            function finishImport() {
+                updatePresetDropdown();
+                showAlertModal(
+                    currentLang === 'th' ? "นำเข้าสำเร็จ" : "Import Successful", 
+                    currentLang === 'th' ? "นำเข้าชุดคำศัพท์เรียบร้อยแล้ว!" : "Presets imported successfully!", 
+                    true
+                );
+            }
         } catch (err) {
-            alert(currentLang === 'th' ? "ไฟล์ไม่ถูกต้อง" : "Invalid file format.");
+            showAlertModal(
+                currentLang === 'th' ? "ข้อผิดพลาด" : "Error", 
+                currentLang === 'th' ? "ไฟล์ไม่ถูกต้อง หรือข้อมูลเกิดความเสียหาย" : "Invalid file format.", 
+                false
+            );
         }
     };
     reader.readAsText(file); // Pass the file directly
