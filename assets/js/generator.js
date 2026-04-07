@@ -1,5 +1,39 @@
 // assets/js/generator.js
 
+const strokeCache = {};
+
+async function getStrokeSVG(char) {
+    if (strokeCache[char]) return strokeCache[char];
+    const code = char.charCodeAt(0);
+    let url = null;
+    if (code >= 0x4E00 && code <= 0x9FFF) { // Kanji
+        const hex = code.toString(16).padStart(5, '0');
+        url = `https://kanjivg.tagaini.net/kanji/${hex}.svg`;
+    } else if (code >= 0x3400 && code <= 0x4DBF || code >= 0x20000 && code <= 0x2A6DF || code >= 0x2A700 && code <= 0x2B73F || code >= 0x2B740 && code <= 0x2B81F || code >= 0x2B820 && code <= 0x2CEAF) { // Chinese
+        // For Chinese, use Makemeahanzi data
+        url = `https://cdn.jsdelivr.net/npm/hanzi-writer-data@latest/${char}.json`;
+    }
+    if (!url) return null;
+    try {
+        const response = await fetch(url);
+        if (response.ok) {
+            if (url.includes('kanjivg')) {
+                const svgText = await response.text();
+                strokeCache[char] = svgText;
+                return svgText;
+            } else { // Makemeahanzi JSON
+                const data = await response.json();
+                if (data.strokes) {
+                    const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="100" height="100"><g transform="scale(1,-1) translate(0,-900)">${data.strokes.map((path, i) => `<path d="${path}" stroke="black" stroke-width="10" fill="none" stroke-linecap="round" stroke-linejoin="round"/>`).join('')}</g></svg>`;
+                    strokeCache[char] = svg;
+                    return svg;
+                }
+            }
+        }
+    } catch (e) {}
+    return null;
+}
+
 function getDynamicRowsPerPage(cols, isFirstPage) {
     const size = el('paperSize') ? el('paperSize').value : 'a4';
     const orient = el('paperOrientation') ? el('paperOrientation').value : 'p';
@@ -10,7 +44,11 @@ function getDynamicRowsPerPage(cols, isFirstPage) {
         'a4p': [210, 297], // width and height in mm or other units
         'a4l': [297, 210],
         'b5p': [176, 250],
-        'b5l': [250, 176]
+        'b5l': [250, 176],
+        'letterp': [216, 279],
+        'letterl': [279, 216],
+        'legalp': [216, 356],
+        'legall': [356, 216]
     };
     const [pW, pH] = dims[size + orient] || [210, 297];
 
@@ -163,7 +201,7 @@ function update() {
     else if (layout === 'stripes-vert') { gapX = 8; gapY = 0; }
 
     const firstPageMetrics = getDynamicRowsPerPage(cols, hasHeader);
-    const otherPageMetrics = getDynamicRowsPerPage(cols, false);
+    const otherPageMetrics = getDynamicRowsPerPage(cols, hasHeader);
     
     if (fill !== 'model') {
         if (lastCalculatedRpp > 0 && rowsRequested === lastCalculatedRpp) {
@@ -266,7 +304,7 @@ function update() {
         const page = document.createElement('div');
         page.className = `page-a4 page-${size} ${orient === 'l' ? 'landscape' : ''} ${showRuby ? 'show-pinyin' : ''} ${showMeaning ? 'show-meaning' : ''}`;
         
-        if (isFirstPage && hasHeader) {
+        if (hasHeader) {
             const headerDiv = document.createElement('div');
             headerDiv.className = 'paper-header-info';
             
@@ -276,8 +314,8 @@ function update() {
             headerDiv.innerHTML = `
                 <div class="paper-header-title">${hTitle}</div>
                 <div class="paper-header-details">
-                    ${hName ? `<div>${lblName} <span style="border-bottom: 1px dotted #333; display:inline-block; min-width:150px;">${hName}</span></div>` : ''}
-                    ${hClass ? `<div>${lblClass} <span style="border-bottom: 1px dotted #333; display:inline-block; min-width:80px;">${hClass}</span></div>` : ''}
+                    ${hName ? `<div>${lblName} <span style="text-align:center; border-bottom: 1px dotted #333; display:inline-block; min-width:150px;">${hName}</span></div>` : ''}
+                    ${hClass ? `<div>${lblClass} <span style="text-align:center; border-bottom: 1px dotted #333; display:inline-block; min-width:80px;">${hClass}</span></div>` : ''}
                 </div>
             `;
             page.appendChild(headerDiv);
@@ -313,6 +351,15 @@ function update() {
         
         if (currentRow < actualTotalRows) page.classList.add('page-break-target');
         
+        // 🌟 ใส่โค้ดลายน้ำตรงนี้ (ใช้ Inline CSS บังคับให้อยู่ตรงกลางแน่นอน 100%) 🌟
+        if (window.customWatermark) {
+            const wm = document.createElement('img');
+            wm.src = window.customWatermark;
+            wm.className = 'watermark-img';
+            // บังคับ Style ในนี้เลย เพื่อป้องกันปัญหา CSS เดิมติดแคช
+            wm.style.cssText = 'position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); opacity: 0.15; max-width: 75%; max-height: 75%; pointer-events: none; z-index: 10;';
+            page.appendChild(wm);
+        }
         fragment.appendChild(page);
         pageNum++;
     }
@@ -359,7 +406,16 @@ function createCell(cellData, size, style, layout, fontFam, textStyle, showRuby,
     const bgSvg = getGridSVG(style, color);
     if (bgSvg) { main.style.backgroundImage = bgSvg; main.style.backgroundSize = '100% 100%'; }
     
-    if (char) {
+    const mixedMode = document.getElementById('mixedMode') ? document.getElementById('mixedMode').checked : false;
+    let shouldHideText = false;
+    
+    // โหมดผสม: คัดแค่ 2 คอลัมน์แรก ที่เหลือให้เขียนเอง
+    if (mixedMode && colIndex >= 2) shouldHideText = true; 
+    
+    // ช่องว่างเจาะจง: ถ้าพิมพ์ _ (Underscore) ให้เว้นว่างไปเลย
+    if (char === '_') shouldHideText = true;
+
+    if (char && !shouldHideText) {
         let fSize = size * 0.60; 
         if (/[ゃゅょっャュョッ]/.test(char)) fSize = size * 0.45; 
         else if (char.length > 1) {
@@ -384,6 +440,19 @@ function createCell(cellData, size, style, layout, fontFam, textStyle, showRuby,
             textEl.style.opacity = textOpacity; 
             
             svg.appendChild(textEl); main.appendChild(svg);
+        } else if (textStyle === 'stroke') {
+            const strokeDiv = document.createElement('div');
+            strokeDiv.className = 'stroke-placeholder';
+            strokeDiv.setAttribute('data-char', char);
+            strokeDiv.style.width = '100%';
+            strokeDiv.style.height = '100%';
+            strokeDiv.style.display = 'flex';
+            strokeDiv.style.alignItems = 'center';
+            strokeDiv.style.justifyContent = 'center';
+            strokeDiv.style.fontFamily = fontFam;
+            strokeDiv.style.fontSize = `${fSize}px`;
+            strokeDiv.innerHTML = char; // placeholder for preview
+            main.appendChild(strokeDiv);
         } else {
             const s = document.createElement('span'); 
             s.innerText = char; s.className = `text-${textStyle}`;
@@ -420,109 +489,6 @@ function scalePaper() {
     document.documentElement.style.setProperty('--zoom-level', finalZoom);
 }
 
-async function exportPDF() {
-    const size = el('paperSize') ? el('paperSize').value : 'a4';
-    const orient = el('paperOrientation') ? el('paperOrientation').value : 'p';
-    const jsOrient = orient === 'l' ? 'landscape' : 'portrait';
-
-    el('loadingOverlay').style.display = 'flex';
-    // 🟢 แก้ไขปัญหาฟอนต์เปลี่ยน: รอให้เบราว์เซอร์โหลดฟอนต์เสร็จ 100% ก่อนเริ่ม
-    await document.fonts.ready;
-    
-    document.body.classList.add('pdf-exporting');
-    
-    const element = el('all-pages');
-    const opt = {
-        margin: 0, filename: 'handwriting_practice.pdf', image: { type: 'jpeg', quality: 1 },
-        html2canvas: { scale: 3, useCORS: true, scrollY: 0 },
-        jsPDF: { unit: 'mm', format: size, orientation: jsOrient }, 
-        pagebreak: { mode: 'css', after: '.page-break-target' } 
-    };
-    
-    setTimeout(() => {
-        html2pdf().set(opt).from(element).save().then(() => { 
-            document.body.classList.remove('pdf-exporting');
-            el('loadingOverlay').style.display = 'none';
-        });
-    }, 200);
-}
-
-// 🟢 อัปเกรดฟังก์ชัน Export รูปภาพ (แก้ปัญหา Element is not attached)
-async function exportImage() {
-    el('loadingOverlay').style.display = 'flex';
-    // 🟢 แก้ไขปัญหาฟอนต์เปลี่ยน: รอให้เบราว์เซอร์โหลดฟอนต์เสร็จ 100% ก่อนเริ่ม
-    await document.fonts.ready;
-    document.body.classList.add('pdf-exporting');
-    
-    try {
-        // 🟢 1. หน่วงเวลาให้ CSS ยืดหน้ากระดาษ (ซ่อนแถบเมนู) ให้เสร็จสมบูรณ์ "ก่อน"
-        await new Promise(resolve => setTimeout(resolve, 300));
-        
-        // 🟢 2. ค่อยสั่งดึงข้อมูลหน้ากระดาษ (เพื่อให้ได้กระดาษปัจจุบันที่ติดอยู่กับหน้าเว็บจริงๆ)
-        const pages = document.querySelectorAll('#all-pages > div');
-        
-        if (pages.length === 0) throw new Error("ไม่พบหน้ากระดาษ");
-
-        const scaleVal = 2; // ความละเอียดระดับ 2 เท่า (คมชัดพอสำหรับพิมพ์)
-
-        if (pages.length === 1) {
-            // 📝 กรณีมีหน้าเดียว (ถ่ายจาก Container หลักเลยเพื่อความปลอดภัย 100%)
-            const canvas = await html2canvas(el('all-pages'), { scale: scaleVal, useCORS: true, scrollY: 0 });
-            
-            const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
-            const url = URL.createObjectURL(blob);
-            
-            const link = document.createElement('a');
-            link.download = 'handwriting_practice.png';
-            link.href = url;
-            
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-            URL.revokeObjectURL(url);
-            
-        } else {
-            // 🗂️ กรณีมีหลายหน้า (บันทึกใส่ ZIP)
-            const zip = new JSZip();
-            const loadingText = el('loadingText');
-            const originalText = loadingText.innerText;
-            
-            for (let i = 0; i < pages.length; i++) {
-                loadingText.innerText = (typeof currentLang !== 'undefined' && currentLang === 'en') 
-                    ? `Processing page ${i + 1} of ${pages.length}...`
-                    : `กำลังถ่ายรูปหน้า ${i + 1} จาก ${pages.length}...`;
-                
-                const canvas = await html2canvas(pages[i], { scale: scaleVal, useCORS: true, scrollY: 0 });
-                
-                const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
-                zip.file(`handwriting_practice_page_${i + 1}.png`, blob);
-            }
-            
-            loadingText.innerText = (typeof currentLang !== 'undefined' && currentLang === 'en') ? "Creating ZIP file..." : "กำลังบีบอัดไฟล์ ZIP...";
-            
-            // บีบอัด ZIP
-            const content = await zip.generateAsync({type:"blob", compression: "STORE"});
-            const url = URL.createObjectURL(content);
-            
-            const link = document.createElement('a');
-            link.href = url;
-            link.download = "handwriting_practice_images.zip";
-            
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-            URL.revokeObjectURL(url);
-            
-            loadingText.innerText = originalText;
-        }
-    } catch (error) {
-        console.error("Export Image Error:", error);
-        alert((typeof currentLang !== 'undefined' && currentLang === 'en') ? "An error occurred while generating images." : "เกิดข้อผิดพลาดในการสร้างรูปภาพ");
-    } finally {
-        document.body.classList.remove('pdf-exporting');
-        el('loadingOverlay').style.display = 'none';
-    }
-}
 
 function saveSettings() {
     const ids = ['preset', 'fontSelect', 'textStyle', 'textInput', 'customReadingInput', 'customMeaningInput', 
