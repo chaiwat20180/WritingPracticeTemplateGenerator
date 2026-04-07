@@ -31,7 +31,25 @@ $(document).ready(function() {
         autoAdjustRows(true);
         debouncedUpdate();
     });
+    // โค้ดแสดงชื่อไฟล์ลายน้ำ
+    $('#watermarkUpload').on('change', function() {
+        let fileName = $(this).val().split('\\').pop();
+        if(fileName) {
+            $('#watermarkLabelText').text('✅ ' + fileName).addClass('has-file');
+        } else {
+            $('#watermarkLabelText').text(currentLang === 'en' ? '📁 Choose file...' : '📁 เลือกไฟล์...').removeClass('has-file');
+        }
+    });
 
+    // โค้ดแสดงชื่อไฟล์ฟอนต์
+    $('#fontUpload').on('change', function() {
+        let fileName = $(this).val().split('\\').pop();
+        if(fileName) {
+            $('#fontLabelText').text('✅ ' + fileName).addClass('has-file');
+        } else {
+            $('#fontLabelText').text(currentLang === 'en' ? '📁 Choose file...' : '📁 เลือกไฟล์...').removeClass('has-file');
+        }
+    });
     $('#preset').on('select2:select', function (e) {
         const val = e.params.data.id;
 
@@ -108,24 +126,39 @@ function debouncedUpdate() {
 }
 
 function resetForm() {
+    // ยืนยันก่อนล้าง (Optional)
+    //if (!confirm(currentLang === 'th' ? "คุณต้องการล้างค่าทั้งหมดใช่หรือไม่?" : "Are you sure you want to reset all settings?")) return;
+
     localStorage.removeItem('wptg_settings_v2'); 
+    
+    // ล้างค่าพื้นฐาน
     el('preset').value = 'custom'; el('textInput').value = ''; 
     el('customReadingInput').value = ''; el('customMeaningInput').value = '';
     el('headerTitle').value = ''; el('headerName').value = ''; el('headerClass').value = '';
     el('cols').value = 10; el('rows').value = 10; 
+    
+    // ล้างค่า Pro Features 🌟
+    clearWatermark();
+    clearCustomFont();
+    if(el('mixedMode')) el('mixedMode').checked = false;
+
+    // รีเซ็ตค่าอื่นๆ กลับไปเป็นค่าโรงงาน
     el('direction').value = 'horiz'; el('fillMode').value = 'all'; 
     el('gridLayout').value = 'spaced'; el('gridStyle').value = 'square'; 
     el('fontSelect').value = "'Sarabun', sans-serif";
     el('textStyle').value = "light";
-    el('gridColor').value = '#888888'; 
+    el('gridColor').value = '#94a3b8'; 
     el('showRuby').checked = true; el('autoRead').checked = true; el('showMeaning').checked = false;
     el('repeatRowHoriz').checked = false; el('repeatRowVert').checked = false;
     el('altRows').checked = false;
     el('paperSize').value = 'a4'; el('paperOrientation').value = 'p';
     el('textOpacity').value = 50; el('opacityVal').innerText = "50";
+    el('gridThickness').value = 1.0; el('weightVal').innerText = "1.0";
     
     manualZoom = 1.0; lastCalculatedRpp = 0;
-    $('.select-ui').trigger('change'); toggleRepeatRow(); debouncedUpdate();
+    $('.select-ui').trigger('change'); 
+    toggleRepeatRow(); 
+    debouncedUpdate();
 }
 
 // --- ระบบจัดการหน้าต่าง Save Preset (Modal) ---
@@ -236,26 +269,9 @@ function updatePresetDropdown() {
     $('#preset').append(group);
 }
 
-// ฟังก์ชันส่งออก (Export) เป็นไฟล์ .json
-function exportUserPresets() {
-    const saved = localStorage.getItem('wptg_user_presets');
-    if (!saved || saved === "[]") {
-        alert(currentLang === 'th' ? "ไม่มีชุดคำศัพท์ที่บันทึกไว้" : "No saved presets found.");
-        return;
-    }
-    const blob = new Blob([saved], { type: "application/json" });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = "wptg_my_presets.json";
-    link.click();
-    URL.revokeObjectURL(url);
-}
-
 // ฟังก์ชันเรียกใช้ตัวเลือกไฟล์
 function triggerImport() { el('importFile').click(); }
 
-// ฟังก์ชันนำเข้า (Import)
 // ฟังก์ชันนำเข้า (Import) แบบใช้ Custom Modal
 function importUserPresets(event) {
     const file = event.target.files[0]; // Access the first file
@@ -308,4 +324,153 @@ function importUserPresets(event) {
     };
     reader.readAsText(file); // Pass the file directly
     event.target.value = ""; // Reset input
+}
+// 5.1 ฟังก์ชันสุ่มคำ (Shuffle) อัปเดตให้สุ่มคำอ่านและคำแปลไปพร้อมกัน
+function shuffleText() {
+    let textStr = el('textInput').value;
+    if (!textStr) return;
+    
+    // ดึงค่าจากทั้ง 3 ช่องมาแยกเป็น Array
+    let isComma = textStr.includes(',');
+    let textArr = isComma ? textStr.split(',') : Array.from(textStr);
+    
+    let readStr = el('customReadingInput').value;
+    let readArr = readStr ? readStr.split(',') : [];
+    
+    let meanStr = el('customMeaningInput').value;
+    let meanArr = meanStr ? meanStr.split(',') : [];
+    
+    // หาความยาวสูงสุด เพื่อป้องกันกรณีที่ผู้ใช้กรอกข้อมูลแต่ละช่องไม่เท่ากัน
+    let maxLen = Math.max(textArr.length, readArr.length, meanArr.length);
+    let items = [];
+    
+    // มัดรวม ตัวอักษร, คำอ่าน, คำแปล ให้อยู่ในก้อนเดียวกัน (Index เดียวกัน)
+    for (let i = 0; i < maxLen; i++) {
+        items.push({
+            t: textArr[i] !== undefined ? textArr[i] : "",
+            r: readArr[i] !== undefined ? readArr[i] : "",
+            m: meanArr[i] !== undefined ? meanArr[i] : ""
+        });
+    }
+
+    // สลับตำแหน่ง (Shuffle)
+    for (let i = items.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [items[i], items[j]] = [items[j], items[i]];
+    }
+
+    // แกะค่าที่สลับแล้ว ส่งกลับไปคืนแต่ละช่อง
+    el('textInput').value = isComma ? items.map(item => item.t).join(',') : items.map(item => item.t).join('');
+    
+    // อัปเดตช่องคำอ่านและคำแปล (เฉพาะถ้ามีข้อมูลอยู่แต่แรก เพื่อไม่ให้เกิดเครื่องหมายลูกน้ำ ,,, เปล่าๆ)
+    if (readStr.trim() !== "") {
+        el('customReadingInput').value = items.map(item => item.r).join(',');
+    }
+    if (meanStr.trim() !== "") {
+        el('customMeaningInput').value = items.map(item => item.m).join(',');
+    }
+
+    // สั่งวาดหน้ากระดาษใหม่
+    debouncedUpdate();
+}
+
+// 5.2 แชร์ลิงก์
+function copyShareLink() {
+    const params = new URLSearchParams({
+        text: el('textInput').value,
+        cols: el('cols').value,
+        gridStyle: el('gridStyle').value,
+        color: el('gridColor').value
+    }).toString();
+    
+    const url = window.location.origin + window.location.pathname + '?' + params;
+    navigator.clipboard.writeText(url).then(() => {
+        const toast = el('copyToast');
+        toast.innerText = "✅ คัดลอกลิงก์แชร์สำเร็จ!";
+        toast.classList.add('show');
+        setTimeout(() => toast.classList.remove('show'), 2500);
+    });
+}
+
+// 5.3 โหลดการตั้งค่าจาก URL
+function loadSettingsFromURL() {
+    const params = new URLSearchParams(window.location.search);
+    if (params.has('text')) el('textInput').value = params.get('text');
+    if (params.has('cols')) el('cols').value = params.get('cols');
+    if (params.has('gridStyle')) $('#gridStyle').val(params.get('gridStyle')).trigger('change');
+    if (params.has('color')) el('gridColor').value = params.get('color');
+}
+
+// 5.4 อัปโหลดฟอนต์ และ ลายน้ำ (อัปเดตใหม่ แก้ไขบั๊กไม่แสดงผล)
+$(document).ready(function() {
+    if (typeof loadSettingsFromURL === 'function') loadSettingsFromURL();
+    
+    // --- ระบบอัปโหลดลายน้ำ ---
+    const wmInput = document.getElementById('watermarkUpload');
+    if (wmInput) {
+        wmInput.addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (!file) {
+                window.customWatermark = null;
+                debouncedUpdate();
+                return;
+            }
+            
+            // อ่านไฟล์เป็น Base64 โดยตรง (ชัวร์และปลอดภัยที่สุด)
+            const reader = new FileReader();
+            reader.onload = function(evt) {
+                window.customWatermark = evt.target.result;
+                debouncedUpdate(); // สั่งให้หน้ากระดาษวาดใหม่
+            };
+            reader.readAsDataURL(file);
+        });
+    }
+
+    // --- ระบบอัปโหลดฟอนต์ ---
+    const fontInput = document.getElementById('fontUpload');
+    if (fontInput) {
+        fontInput.addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+            
+            const reader = new FileReader();
+            reader.onload = function(evt) {
+                const fontName = "CustomFont_" + Date.now();
+                const newStyle = document.createElement('style');
+                newStyle.appendChild(document.createTextNode(`
+                    @font-face { font-family: '${fontName}'; src: url('${evt.target.result}'); }
+                `));
+                document.head.appendChild(newStyle);
+                
+                const option = new Option("✨ " + file.name, `'${fontName}'`, true, true);
+                $('#fontSelect').append(option).trigger('change');
+                debouncedUpdate();
+            };
+            reader.readAsDataURL(file);
+        });
+    }
+});
+// ฟังก์ชันล้างลายน้ำ/โลโก้
+function clearWatermark() {
+    window.customWatermark = null;
+    el('watermarkUpload').value = "";
+    $('#watermarkLabelText').text(currentLang === 'en' ? '📁 Choose file...' : '📁 เลือกไฟล์...').removeClass('has-file');
+    debouncedUpdate();
+}
+
+// ฟังก์ชันล้างฟอนต์ส่วนตัว
+function clearCustomFont() {
+    el('fontUpload').value = "";
+    $('#fontLabelText').text(currentLang === 'en' ? '📁 Choose file...' : '📁 เลือกไฟล์...').removeClass('has-file');
+    
+    // ลบตัวเลือก Custom Font ออกจาก Dropdown
+    $('#fontSelect option').each(function() {
+        if ($(this).val().includes('CustomFont_')) {
+            $(this).remove();
+        }
+    });
+    
+    // กลับไปใช้ฟอนต์ตั้งต้น
+    $('#fontSelect').val("'Sarabun', sans-serif").trigger('change');
+    debouncedUpdate();
 }
