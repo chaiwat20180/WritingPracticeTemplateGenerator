@@ -188,3 +188,16 @@ function closeAlertModal(e) {
     if (e && e.target !== el('customAlertModal')) return;
     el('customAlertModal').classList.remove('show');
 }
+// Toggle Dark Mode
+function toggleDarkMode() {
+    document.body.classList.toggle('dark-mode');
+    const isDark = document.body.classList.contains('dark-mode');
+    localStorage.setItem('wptg_dark_mode', isDark);
+}
+
+// ตรวจสอบ Dark Mode ตอนโหลดหน้าเว็บ
+document.addEventListener('DOMContentLoaded', () => {
+    if (localStorage.getItem('wptg_dark_mode') === 'true') {
+        document.body.classList.add('dark-mode');
+    }
+});
