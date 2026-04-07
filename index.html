@@ -31,6 +31,7 @@
     <h2>🛠 WPTG</h2>
     <div class="header-right">
         <button class="donate-btn" onclick="openDonateModal()">💖</button>
+        <button class="donate-btn" onclick="toggleDarkMode()" style="background: #333; box-shadow: none;">🌙</button>
         <div class="lang-switch">
             <div class="lang-option active" id="btn-th-mob" onclick="setLanguage('th')">TH</div>
             <div class="lang-option" id="btn-en-mob" onclick="setLanguage('en')">EN</div>
@@ -53,6 +54,7 @@
         <h2>🛠 WPTG</h2>
         <div class="header-right">
             <button class="donate-btn" onclick="openDonateModal()">💖 <span data-i18n="btnDonate">Donate</span></button>
+            <button class="donate-btn" onclick="toggleDarkMode()" style="background: #333; box-shadow: none;">🌙</button>
             <div class="lang-switch">
                 <div class="lang-option active" id="btn-th-desk" onclick="setLanguage('th')">TH</div>
                 <div class="lang-option" id="btn-en-desk" onclick="setLanguage('en')">EN</div>
@@ -159,6 +161,7 @@
             <label style="color: #d97706; font-weight: bold;" data-i18n="customMeanLabel">💡 คำแปลกำหนดเอง (คั่นด้วย ,)</label>
             <input type="text" id="customMeaningInput" class="control" placeholder="ใส่คำแปล เช่น นก,หมา,แมว..." data-i18n-ph="customMeanPh" style="border-color: #fcd34d; margin-top: 5px;">
         </div>
+        <button onclick="shuffleText()" class="btn btn-secondary" style="width: 100%; margin-top: 10px;" data-i18n="btnShuffle">🔀 สุ่มลำดับคำ (Shuffle)</button>
     </div>
 
     <div class="sidebar-section collapsed">
@@ -170,6 +173,8 @@
                 <select id="paperSize" class="select-ui">
                     <option value="a4">A4</option>
                     <option value="b5">B5</option>
+                    <option value="letter">US Letter</option>
+                    <option value="legal">Legal</option>
                 </select>
             </div>
             <div class="group" style="flex:1">
@@ -248,6 +253,7 @@
                 <option value="dotted" data-i18n="tsDotted">ลายจุด/จำลองเส้นปะ (Dotted)</option>
                 <option value="outline" data-i18n="tsOutline">เส้นขอบโปร่ง (Outline)</option>
                 <option value="solid" data-i18n="tsSolid">สีดำทึบ (Solid Black)</option>
+                <option value="stroke" data-i18n="tsStroke">ลำดับการเขียน (Stroke Order)</option>
             </select>
         </div>
 
@@ -309,6 +315,26 @@
             <input type="checkbox" id="autoRead" checked> <span data-i18n="autoReadLabel">✨ เติมคำอ่านอัตโนมัติ (แถบเทา = สระ)</span>
         </label>
     </div>
+        <div class="sidebar-section collapsed">
+            <h4 class="sidebar-section-title" data-i18n="secAdvanced">🔧 เครื่องมือขั้นสูง (Pro)</h4>
+            <div class="group">
+                <label data-i18n="watermarkLabel">🖼️ ภาพลายน้ำ / โลโก้ (Watermark)</label>
+                <div class="file-upload-wrapper">
+                    <input type="file" id="watermarkUpload" accept="image/*" class="file-upload-input">
+                    <label for="watermarkUpload" class="file-upload-btn" id="watermarkLabelText" data-i18n="fileSelect">📁 เลือกไฟล์...</label>
+                </div>
+                <button class="btn btn-danger" onclick="clearWatermark()" style="padding: 5px; font-size: 11px; margin-top: 5px; width: 100%; display: flex; gap: 5px;" data-i18n="btnClearLogo">🗑️ ลบโลโก้</button>
+            </div>
+            
+            <div class="group" style="margin-top: 10px;">
+                <label data-i18n="fontUploadLabel">🔤 อัปโหลดฟอนต์ส่วนตัว (.ttf, .otf)</label>
+                <div class="file-upload-wrapper">
+                    <input type="file" id="fontUpload" accept=".ttf,.otf" class="file-upload-input">
+                    <label for="fontUpload" class="file-upload-btn" id="fontLabelText" data-i18n="fileSelect">📁 เลือกไฟล์...</label>
+                </div>
+                <button class="btn btn-danger" onclick="clearCustomFont()" style="padding: 5px; font-size: 11px; margin-top: 5px; width: 100%; display: flex; gap: 5px;" data-i18n="btnClearFont">🗑️ ลบฟอนต์</button>
+            </div>
+        </div>
 
     <div class="sidebar-actions">
         <div class="row-flex" style="margin-bottom: 5px;">
@@ -328,7 +354,7 @@
         <a href="https://github.com/chaiwat20180" target="_blank">github.com/chaiwat20180</a>
         <script type="text/javascript" src="https://counter1.optistats.ovh/private/counter.js?c=6jgfrsfjs6rany2sdbkh3f6149cdjbf9&down=async" async></script>
         <br><br>
-         <div id="sfc6jgfrsfjs6rany2sdbkh3f6149cdjbf9"></div>
+         <div id="sfc6jgfrsfjs6rany2sdbkh3f6149cdjbf9" style="pointer-events: none; color: inherit; text-decoration: none;"></div>
         <noscript><a href="https://www.freecounterstat.com" title="web counter"><img src="https://counter1.optistats.ovh/private/freecounterstat.php?c=6jgfrsfjs6rany2sdbkh3f6149cdjbf9" border="0" title="web counter" alt="web counter"></a></noscript>
     </div>
 </div>
@@ -398,6 +424,6 @@
 <script src="assets/js/ui.js"></script>
 <script src="assets/js/generator.js"></script>
 <script src="assets/js/main.js"></script>
-
+<script src="assets/js/export.js"></script>
 </body>
 </html>
