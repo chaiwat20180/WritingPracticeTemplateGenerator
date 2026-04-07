@@ -54,7 +54,7 @@ const translations = {
         th: {
             btnDonate: "Donate", modalTitle: "💖 สนับสนุนนักพัฒนา", tabQR: "พร้อมเพย์", tabTMW: "TrueMoney", tabBank: "ธนาคาร", qrDesc: "สแกน QR Code ด้วยแอปพลิเคชันธนาคาร", btnCopy: "📋 คัดลอก",
             presetLabel: "ชุดตัวอักษร", fontLabel: "รูปแบบฟอนต์", textStyleLabel: "รูปแบบตัวอักษรสำหรับคัด",
-            tsLight: "สีเทาอ่อน (Light Grey - ปกติ)", tsDotted: "ลายจุด/จำลองเส้นปะ (Dotted)", tsOutline: "เส้นขอบโปร่ง (Outline)", tsSolid: "สีดำทึบ (Solid Black)",
+            tsLight: "สีเทาอ่อน (Light Grey - ปกติ)", tsDotted: "ลายจุด/จำลองเส้นปะ (Dotted)", tsOutline: "เส้นขอบโปร่ง (Outline)", tsSolid: "สีดำทึบ (Solid Black)", tsStroke: "ลำดับการเขียน (Stroke Order)",
             textLabel: "ข้อความต้นแบบ (คั่นด้วยลูกน้ำ ,)", textPh: "พิมพ์ข้อความที่ต้องการ...", 
             customReadLabel: "💡 คำอ่านกำหนดเอง (คั่นด้วยลูกน้ำ ,)", customReadPh: "เช่น a,b,c...",
             meaningLabel: "📖 แสดงช่องคำแปล (Meaning)", customMeanPh: "ใส่คำแปลตามลำดับ เช่น นก,หมา,แมว...",
@@ -101,12 +101,21 @@ const translations = {
             modalSaveTitle: "💾 บันทึกชุดคำศัพท์",
             presetNameLabel: "ตั้งชื่อชุดคำศัพท์ของคุณ:",
             btnConfirmSave: "บันทึก",
-            phPresetName: "เช่น คำศัพท์บทที่ 1..."
+            phPresetName: "เช่น คำศัพท์บทที่ 1...",
+            secAdvanced: "🔧 เครื่องมือขั้นสูง (Pro)",
+            mixedModeLabel: "🖍️ โหมดผสม (คัดแค่ 2 ช่องแรก)",
+            watermarkLabel: "🖼️ ภาพลายน้ำ / โลโก้ (Watermark)",
+            fontUploadLabel: "🔤 อัปโหลดฟอนต์ส่วนตัว (.ttf, .otf)",
+            btnShareLink: "🔗 คัดลอกลิงก์แชร์แม่แบบ",
+            fileSelect: "📁 เลือกไฟล์...",
+            btnShuffle: "🔀 สุ่มลำดับคำ (Shuffle)",
+            btnClearLogo: "🗑️ ลบโลโก้",
+            btnClearFont: "🗑️ ลบฟอนต์"
         },
         en: {
             btnDonate: "Donate", modalTitle: "💖 Support Developer", tabQR: "PromptPay", tabTMW: "TrueMoney", tabBank: "Banks", qrDesc: "Scan QR Code with any banking app", btnCopy: "📋 Copy",
             presetLabel: "Character Set", fontLabel: "Font Family", textStyleLabel: "Tracing Text Style",
-            tsLight: "Light Grey (Default)", tsDotted: "Dotted Pattern (SVG Vector)", tsOutline: "Outline (Hollow)", tsSolid: "Solid Black",
+            tsLight: "Light Grey (Default)", tsDotted: "Dotted Pattern (SVG Vector)", tsOutline: "Outline (Hollow)", tsSolid: "Solid Black", tsStroke: "Stroke Order Guide",
             textLabel: "Practice Text (Comma separated)", textPh: "Type your text here...", 
             customReadLabel: "💡 Custom Readings (Comma separated)", customReadPh: "e.g., a,b,c...",
             meaningLabel: "📖 Show Meaning Box", customMeanPh: "e.g., bird,dog,cat...",
@@ -154,6 +163,15 @@ const translations = {
             presetNameLabel: "Enter preset name:",
             btnConfirmSave: "Save",
             phPresetName: "e.g., Lesson 1 Vocab...",
+            secAdvanced: "🔧 Advanced Tools (Pro)",
+            mixedModeLabel: "🖍️ Mixed Mode (Trace 1st & 2nd col only)",
+            watermarkLabel: "🖼️ Watermark / Logo Image",
+            fontUploadLabel: "🔤 Upload Custom Font (.ttf, .otf)",
+            btnShareLink: "🔗 Copy Shareable Link",
+            fileSelect: "📁 Choose file...",
+            btnShuffle: "🔀 Shuffle Words",
+            btnClearLogo: "🗑️ Clear Logo",
+            btnClearFont: "🗑️ Clear Font"
         }
     };
 
